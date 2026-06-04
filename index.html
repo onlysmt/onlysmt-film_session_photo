@@ -100,23 +100,35 @@
        3. 排版文字
        ========================================= */
     .title-lockup {
-      position: fixed; top: clamp(18px, 4vw, 36px); left: clamp(18px, 4vw, 42px);
-      z-index: 12; width: min(390px, calc(100vw - 36px)); opacity: 0; pointer-events: none;
-      animation: fadeIn 2s ease forwards 1s;
+      position: fixed; top: 50%; left: 50%;
+      z-index: 12; width: min(680px, calc(100vw - 32px)); opacity: 0; pointer-events: none;
+      text-align: center;
+      transform: translate(-50%, -50%);
+      animation: fadeIn 2s ease forwards 2s;
     }
+    .app.list-mode .title-lockup { z-index: 2; }
     @keyframes fadeIn { to { opacity: 1; } }
 
-    .eyebrow { margin: 0 0 8px; color: var(--gold); font-size: 13px; font-weight: bold; letter-spacing: .2em; text-transform: uppercase; }
-    h1 { margin: 0; max-width: 360px; font-size: clamp(30px, 5vw, 64px); line-height: .92; color: var(--paper); text-shadow: 0 4px 24px rgba(0, 0, 0, 0.8); }
+    .title-lockup > * { animation: titleCountdownFade 16s linear infinite; }
+    @keyframes titleCountdownFade {
+      0%, 75% { opacity: 1; }
+      76%, 95% { opacity: .18; }
+      96%, 100% { opacity: 1; }
+    }
+
+    .eyebrow { margin: 0 0 12px; color: var(--gold); font-size: clamp(13px, 1.65vw, 20px); font-weight: bold; letter-spacing: .28em; text-transform: uppercase; text-shadow: 0 2px 16px rgba(0, 0, 0, 0.72); }
+    h1 { margin: 0; max-width: none; font-size: clamp(42px, 9vw, 118px); line-height: .86; color: var(--paper); text-shadow: 0 6px 34px rgba(0, 0, 0, 0.86); }
     .mode-word { display: inline-block; color: var(--hot); transform: translateY(-.04em); }
 
-    .stage { position: absolute; inset: 0; display: grid; place-items: center; transform-style: preserve-3d; }
+    .stage { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; transform-style: preserve-3d; }
+    .app.list-mode .stage { z-index: 12; }
+    .app.preview-mode .stage { z-index: 20; }
     .wall {
       position: relative; width: calc(100vw - 100px); height: calc(100vh - 100px);
       transform-style: preserve-3d; transition: opacity 0.8s ease, transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.8s ease;
     }
     .app.list-mode .wall {
-      opacity: .15; filter: blur(12px) sepia(0.5) saturate(0.6) brightness(0.9);
+      opacity: .12; filter: sepia(0.35) saturate(0.62) brightness(0.82);
       transform: translateZ(-260px) rotateX(12deg) scale(.78); pointer-events: none;
     }
 
@@ -169,7 +181,7 @@
     .photo-surface {
       position: relative; display: grid; width: 100%; height: 100%; overflow: hidden; place-items: center;
       border-radius: 1px; background: #000; isolation: isolate;
-      filter: sepia(0.3) contrast(1.2) saturate(0.85) hue-rotate(-5deg);
+      filter: sepia(0.16) saturate(0.9);
       box-shadow: inset 0 0 12px rgba(0,0,0,0.8);
     }
 
@@ -198,10 +210,11 @@
        ========================================= */
     .carousel-shell {
       position: absolute; inset: 0; display: grid; place-items: center; opacity: 0;
+      z-index: 6;
       transform: translateY(22px) translateZ(140px); pointer-events: none;
       transition: opacity 0.8s ease, transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); transform-style: preserve-3d;
     }
-    .app.list-mode .carousel-shell { opacity: 1; transform: translateY(0) translateZ(170px); pointer-events: auto; }
+    .app.list-mode .carousel-shell { z-index: 13; opacity: 1; transform: translateY(0) translateZ(170px); pointer-events: auto; }
     .carousel { position: relative; width: 100vw; height: min(560px, 68vh); transform-style: preserve-3d; }
 
     .carousel-card {
@@ -229,6 +242,41 @@
 
     .carousel-card .photo-label { bottom: 32px; right: 20px; font-size: clamp(12px, 1.2vw, 15px); }
     .carousel-card .film-brand { top: 32px; left: 20px; font-size: clamp(11px, 1vw, 14px); }
+
+    .photo-preview {
+      position: absolute; inset: 0; z-index: 18; display: grid; place-items: center; padding: clamp(18px, 4vw, 56px);
+      pointer-events: none; opacity: 0; transform: translateZ(360px) scale(.985);
+      transition: opacity .34s ease, transform .48s cubic-bezier(.16, 1, .3, 1);
+      background: radial-gradient(circle at 50% 46%, rgba(16, 12, 9, .36), rgba(8, 6, 5, .82) 76%);
+      backdrop-filter: blur(12px) sepia(.18);
+      transform-style: preserve-3d;
+    }
+    .app.preview-mode .photo-preview { pointer-events: auto; opacity: 1; transform: translateZ(420px) scale(1); }
+    .app.preview-mode .carousel-shell { filter: sepia(.28) saturate(.62) brightness(.48); }
+    .preview-frame {
+      position: relative; width: min(88vw, 1160px); height: min(82vh, 760px); margin: 0; padding: clamp(18px, 2.6vw, 32px);
+      border: 1px solid rgba(212, 178, 113, .34); border-radius: 3px;
+      background: rgba(8, 7, 6, .86);
+      box-shadow: 0 34px 96px rgba(0, 0, 0, .72), inset 0 0 0 10px rgba(0, 0, 0, .22);
+    }
+    .preview-frame::before,
+    .preview-frame::after {
+      content: ""; position: absolute; left: clamp(18px, 2.6vw, 32px); right: clamp(18px, 2.6vw, 32px); height: 12px;
+      background: repeating-linear-gradient(to right, rgba(255, 255, 255, .18) 0 8px, transparent 8px 18px);
+      opacity: .68; pointer-events: none;
+    }
+    .preview-frame::before { top: 10px; }
+    .preview-frame::after { bottom: 10px; }
+    .preview-image {
+      width: 100%; height: 100%; object-fit: contain; display: block; background: #000;
+      filter: sepia(.12) saturate(.94); box-shadow: inset 0 0 24px rgba(0,0,0,.75);
+    }
+    .preview-caption {
+      position: absolute; left: clamp(24px, 3vw, 46px); right: clamp(24px, 3vw, 46px); bottom: clamp(22px, 3vw, 42px);
+      display: flex; justify-content: space-between; gap: 18px; color: var(--gold);
+      font-family: "Courier New", monospace; font-size: clamp(11px, 1vw, 14px); letter-spacing: .14em; text-transform: uppercase;
+      text-shadow: 0 2px 12px rgba(0,0,0,.9); pointer-events: none;
+    }
 
     /* =========================================
        6. 沉浸式 UI 
@@ -273,9 +321,10 @@
     }
 
     .palm-dot {
-      position: absolute; left: 50%; top: 50%; z-index: 5; width: 14px; height: 14px;
-      border: 2px solid var(--hot); border-radius: 50%; transform: translate(-50%, -50%); opacity: 0;
-      background: transparent; box-shadow: 0 0 8px rgba(217, 122, 108, 0.8); transition: opacity .18s ease;
+      --px: 60px; --py: 45px;
+      position: absolute; left: 0; top: 0; z-index: 5; width: 14px; height: 14px;
+      border: 2px solid var(--hot); border-radius: 50%; transform: translate3d(calc(var(--px) - 50%), calc(var(--py) - 50%), 0); opacity: 0;
+      background: transparent; box-shadow: 0 0 8px rgba(217, 122, 108, 0.8); transition: opacity .18s ease; will-change: transform, opacity;
     }
     .palm-dot.active { opacity: 1; }
 
@@ -318,6 +367,7 @@
     body.gallery-loading .projection-beam,
     body.gallery-loading .projection-screen,
     body.gallery-loading .vp-reel,
+    body.gallery-loading .title-lockup > *,
     body.gallery-loading .countdown-flasher * { animation-play-state: paused; }
     @keyframes cardIn {
       0% {
@@ -338,7 +388,7 @@
     }
 
     @media (max-width: 760px) {
-      .title-lockup { top: 16px; } .eyebrow { font-size: 10px; } h1 { max-width: 250px; } .wall { height: 78vh; }
+      .title-lockup { width: min(520px, calc(100vw - 28px)); } .eyebrow { font-size: 11px; letter-spacing: .18em; } h1 { font-size: clamp(46px, 18vw, 88px); } .wall { height: 78vh; }
       .photo-card { width: clamp(80px, 20vw, 120px); padding: 32px 12px 36px 12px; }
       .photo-card::before, .photo-card::after { height: 6px; left: 8px; right: 8px; }
       .status { grid-template-columns: 86px minmax(0, 1fr); right: 12px; bottom: 12px; left: 12px; }
@@ -492,6 +542,15 @@
       <div class="carousel-shell" aria-label="Horizontal photo preview">
         <div class="carousel" id="carousel"></div>
       </div>
+      <div class="photo-preview" id="photoPreview" aria-hidden="true">
+        <figure class="preview-frame">
+          <img class="preview-image" id="previewImage" alt="">
+          <figcaption class="preview-caption">
+            <span id="previewTitle">Frame</span>
+            <span id="previewNumber">NO.00</span>
+          </figcaption>
+        </figure>
+      </div>
     </section>
 
     <div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite" aria-hidden="true">
@@ -531,8 +590,13 @@
     } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 
     const PHOTO_COUNT = 30;
+    const MAX_DISPLAY_IMAGE_SIZE = 1280;
+    const JPEG_PREVIEW_QUALITY = .82;
+    const DETECTION_INTERVAL_MS = 82;
+    const READOUT_INTERVAL_MS = 180;
+    const GALLERY_SETTLE_MS = 2600;
     const VOTE_THRESHOLD = 3;
-    const ZONE_STEP_COOLDOWN = 240;
+    const ZONE_STEP_COOLDOWN = 500;
     const PHOTO_FOLDER = "\u7167\u7247/";
     const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp", "bmp", "avif", "svg"]);
     const app = document.getElementById("app");
@@ -551,6 +615,10 @@
     const loadingOverlay = document.getElementById("loadingOverlay");
     const loadingTitle = document.getElementById("loadingTitle");
     const loadingDetail = document.getElementById("loadingDetail");
+    const photoPreview = document.getElementById("photoPreview");
+    const previewImage = document.getElementById("previewImage");
+    const previewTitle = document.getElementById("previewTitle");
+    const previewNumber = document.getElementById("previewNumber");
 
     const filmBrands = ["IMAX 70MM", "KODAK VISION3", "ILFORD ORTHO", "FUJIFILM ETERNA", "AGFA GEVAERT"];
 
@@ -566,12 +634,18 @@
     let centerIndex = Math.floor(PHOTO_COUNT / 2);
     let lastVideoTime = -1;
     let gestureVotes = { open: 0, fist: 0 };
+    let previewVotes = { point: 0, open: 0 };
+    let isPreviewOpen = false;
     let hasCamera = false;
     let zoneState = { current: "center", lastTriggerAt: 0 };
     let wallResizeTimer;
     let activeObjectUrls = [];
     let isGalleryBusy = false;
     let detectionLoopStarted = false;
+    let lastDetectionAt = 0;
+    let lastReadoutAt = 0;
+    let readoutCache = { label: "", text: "", confidence: "" };
+    let handCanvasRect = { width: 0, height: 0 };
     const layoutSeed = Math.random() * 100000;
 
     function seededNoise(seed) { const x = Math.sin(seed * 999.123) * 10000; return x - Math.floor(x); }
@@ -579,6 +653,7 @@
     function centeredNoise(seed, scale) { const average = (seededNoise(seed) + seededNoise(seed + 17) + seededNoise(seed + 37)) / 3; return (average - .5) * 2 * scale; }
     function seededRange(seed, min, max) { return min + seededNoise(seed) * (max - min); }
     function nextFrame() { return new Promise((resolve) => requestAnimationFrame(() => resolve())); }
+    function wait(ms) { return new Promise((resolve) => window.setTimeout(resolve, ms)); }
     async function settlePaint(frameCount = 2) { for (let i = 0; i < frameCount; i += 1) await nextFrame(); }
 
     function setGalleryBusy(isBusy, title = "Loading Reel", detail = "Preparing frames...") {
@@ -632,6 +707,50 @@
       }
     }
 
+    function isCanvasCompressible(file) {
+      return /^image\/(jpeg|jpg|png|webp|bmp|avif)$/i.test(file.type || "") && !/\.gif$/i.test(file.name);
+    }
+
+    async function createDisplaySource(file) {
+      if (!isCanvasCompressible(file)) {
+        const src = URL.createObjectURL(file);
+        return { src, title: file.name, objectUrl: src };
+      }
+
+      try {
+        const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+        const scale = Math.min(1, MAX_DISPLAY_IMAGE_SIZE / Math.max(bitmap.width, bitmap.height));
+        const width = Math.max(1, Math.round(bitmap.width * scale));
+        const height = Math.max(1, Math.round(bitmap.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d", { alpha: false });
+        context.drawImage(bitmap, 0, 0, width, height);
+        bitmap.close();
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", JPEG_PREVIEW_QUALITY));
+        if (!blob) throw new Error("preview blob unavailable");
+        const src = URL.createObjectURL(blob);
+        return { src, title: file.name, objectUrl: src };
+      } catch (error) {
+        const src = URL.createObjectURL(file);
+        return { src, title: file.name, objectUrl: src };
+      }
+    }
+
+    async function createDisplaySources(files) {
+      const sortedFiles = files
+        .sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN", { numeric: true, sensitivity: "base" }))
+        .slice(0, PHOTO_COUNT);
+      const sources = [];
+      for (let index = 0; index < sortedFiles.length; index += 2) {
+        updateLoadingDetail(`Optimizing frames ${Math.min(index + 2, sortedFiles.length)}/${sortedFiles.length}...`, .38 + Math.min(.24, index / Math.max(1, sortedFiles.length) * .24));
+        sources.push(...await Promise.all(sortedFiles.slice(index, index + 2).map(createDisplaySource)));
+        await nextFrame();
+      }
+      return sources;
+    }
+
     function buildPhotoSurface(photo) {
       const surface = document.createElement("div");
       surface.className = "photo-surface";
@@ -679,6 +798,7 @@
     }
 
     async function refreshGalleries() {
+      closeSelectedPreview();
       wall.replaceChildren(); carousel.replaceChildren(); centerIndex = Math.floor(PHOTO_COUNT / 2);
       updateLoadingDetail("Placing frames on the wall...", .68);
       await renderWall();
@@ -723,14 +843,14 @@
 
     async function applySelectedFiles(files, keepBusy = false) {
       if (isGalleryBusy && !keepBusy) return;
-      const nextUrls = [];
       const previousPhotos = photos;
       if (keepBusy) updateLoadingDetail("Reading selected frames...", .38);
       else setGalleryBusy(true, "Loading Reel", "Reading selected frames...");
-      const sources = files.sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN", { numeric: true, sensitivity: "base" })).slice(0, PHOTO_COUNT).map((file) => {
-        const src = URL.createObjectURL(file); nextUrls.push(src); return { src, title: file.name };
-      });
+      let sources = [];
+      let nextUrls = [];
       try {
+        sources = await createDisplaySources(files);
+        nextUrls = sources.map((source) => source.objectUrl).filter(Boolean);
         setPhotosFromSources(sources);
         await preloadPhotoImages(photos);
         const previousObjectUrls = activeObjectUrls;
@@ -744,6 +864,8 @@
         setReadout("Archive Error", "Could not process selected frames.", .14);
       } finally {
         await settlePaint(1);
+        updateLoadingDetail("Settling the projection...", .9);
+        await wait(GALLERY_SETTLE_MS);
         setGalleryBusy(false, "Loading Reel", "Preparing frames...");
       }
     }
@@ -765,81 +887,92 @@
       }
     }
 
-    async function renderWall() {
-          const rect = wall.getBoundingClientRect(); const mobile = window.innerWidth <= 760;
-          const cardWidth = mobile ? clampValue(window.innerWidth * .20, 80, 110) : clampValue(window.innerWidth * .085, 100, 160);
-          const cardHeight = cardWidth * 1.33;
-          const maxX = Math.max(0, rect.width / 2 - cardWidth / 2 - 10); const maxY = Math.max(0, rect.height / 2 - cardHeight / 2 - 10);
-          const spreadX = maxX * .98; const spreadY = maxY * .9;
-          const safeWidth = cardWidth * 1.25; const safeHeight = cardHeight * 1.15;
+    function renderWall() {
+      const rect = wall.getBoundingClientRect(); 
+      const mobile = window.innerWidth <= 760;
+      const cardWidth = mobile ? clampValue(window.innerWidth * .20, 80, 110) : clampValue(window.innerWidth * .085, 100, 160);
+      const cardHeight = cardWidth * 1.33;
+      
+      const maxX = Math.max(0, rect.width / 2 - cardWidth / 2 - 10); 
+      const maxY = Math.max(0, rect.height / 2 - cardHeight / 2 - 10);
+      
+      // X和Y的最大散布范围。如果想让椭圆更扁平，可以适当调小 spreadY
+      const spreadX = maxX * 0.95; 
+      const spreadY = maxY * 0.85; 
+      const safeWidth = cardWidth * 1.25; 
+      const safeHeight = cardHeight * 1.15;
+      
+      const placed = [];
+
+      photos.forEach((photo, index) => {
+        const card = document.createElement("article"); card.className = "photo-card";
+        card.style.setProperty("--delay", `${index * 35}ms`);
+
+        // ... 前面的代码保持不变
+        let best = { x: 0, y: 0, score: -1 }, chosen = null;
+        for (let attempt = 0; attempt < 260; attempt += 1) {
+          const seed = layoutSeed + index * 97 + attempt * 13;
           
-          // 改良：让 placed 数组不仅记录 x, y，同时记录并计算每张卡片的最终 z 轴深度
-          const placed = [];
-
-          for (const [index, photo] of photos.entries()) {
-            const card = document.createElement("article"); card.className = "photo-card";
-            card.style.setProperty("--delay", `${index * 35}ms`);
-
-            let best = { x: 0, y: 0, score: -1 }, chosen = null;
-            for (let attempt = 0; attempt < 260; attempt += 1) {
-              const seed = layoutSeed + index * 97 + attempt * 13;
-              const angle = seededRange(seed + 1, 0, Math.PI * 2);
-              const radius = Math.pow(seededNoise(seed + 2), .46) * (index < 18 ? .95 : 1);
-              const driftX = centeredNoise(seed + 3, .12) * maxX; const driftY = centeredNoise(seed + 4, .11) * maxY;
-              const x = clampValue(Math.cos(angle) * radius * spreadX + driftX, -maxX, maxX);
-              const y = clampValue(Math.sin(angle) * radius * spreadY + driftY, -maxY, maxY);
-              
-              // 此处维持原有的 2D 碰撞检测算法寻找最佳位置
-              const collision = placed.some((point) => Math.abs(x - point.x) < safeWidth && Math.abs(y - point.y) < safeHeight);
-              const minScore = placed.reduce((score, point) => {
-                const dx = Math.abs(x - point.x) / safeWidth; const dy = Math.abs(y - point.y) / safeHeight;
-                return Math.min(score, Math.min(dx, dy) + Math.hypot(dx, dy) * .3);
-              }, 99);
-              if (minScore > best.score) { best = { x, y, score: minScore }; }
-              if (!collision) { chosen = { x, y }; break; }
-            }
-
-            const x = chosen ? chosen.x : best.x; const y = chosen ? chosen.y : best.y;
-
-            // ========================================================
-            // 【核心修复：防穿模堆叠算法】
-            // 遍历所有已经在墙上的卡片，精准找出所有与当前新卡片在 2D 空间上存在重叠的卡片
-            // ========================================================
-            let maxUnderZ = 0;
-            placed.forEach((point) => {
-              // 使用实际的卡片物理长宽进行重叠碰撞判定
-              if (Math.abs(x - point.x) < cardWidth && Math.abs(y - point.y) < cardHeight) {
-                // 找出下方所有被压住的照片里，Z轴最高的那张
-                if (point.z > maxUnderZ) {
-                  maxUnderZ = point.z;
-                }
-              }
-            });
-
-            // 计算当前卡片的 Z 轴深度：
-            // 如果下方有压着的卡片，则在它的基础上强制抬升 25px（这个间距刚好能完美抵消倾斜角带来的边缘翘起，绝不穿模）
-            // 如果下方是空的，则给予一个基础的随机浅深度，保持整体的错落感
-            const baseZ = 10 + seededNoise(layoutSeed + index + 19) * 30;
-            const z = maxUnderZ > 0 ? maxUnderZ + 25 : baseZ;
-
-            // 将包含计算后 z 轴的数据存入数组，供后续卡片参考堆叠
-            placed.push({ x, y, z });
-
-            const rx = -6 + seededNoise(layoutSeed + index + 29) * 12;
-            const ry = -7 + seededNoise(layoutSeed + index + 41) * 14;
-            const rz = -11 + seededNoise(layoutSeed + index + 53) * 22;
-
-            card.style.setProperty("--x", `${x.toFixed(2)}px`); card.style.setProperty("--y", `${y.toFixed(2)}px`);
-            card.style.setProperty("--z", `${z.toFixed(2)}px`); card.style.setProperty("--rx", `${rx.toFixed(2)}deg`);
-            card.style.setProperty("--ry", `${ry.toFixed(2)}deg`); card.style.setProperty("--rz", `${rz.toFixed(2)}deg`);
-            card.style.setProperty("--start-x", `${(x * .62).toFixed(2)}px`); card.style.setProperty("--start-y", `${(y * .62 + 28).toFixed(2)}px`);
-            card.style.setProperty("--start-z", `${(z - 180).toFixed(2)}px`); card.style.setProperty("--start-rx", `${(rx * 1.8).toFixed(2)}deg`);
-            card.style.setProperty("--start-ry", `${(ry * 1.8).toFixed(2)}deg`); card.style.setProperty("--hover-z", `${(z + 74).toFixed(2)}px`);
-            card.style.setProperty("--hover-rx", `${(rx * .45).toFixed(2)}deg`); card.style.setProperty("--hover-ry", `${(ry * .45).toFixed(2)}deg`);
-            card.append(buildPhotoSurface(photo)); wall.append(card);
-            if ((index + 1) % 6 === 0) await nextFrame();
+          // 【布局修改：中心留白逻辑】
+          // 1. 生成原始坐标
+          let x = (seededNoise(seed + 3) - 0.5) * maxX * 1.8;
+          let y = (seededNoise(seed + 4) - 0.5) * maxY * 1.8;
+          
+          // 2. 定义中心禁区大小 (例如屏幕中心的 40% 区域为留白)
+          const holeRadius = Math.min(rect.width, rect.height) * 0.4;
+          const distToCenter = Math.hypot(x, y);
+          
+          // 3. 如果落入禁区，强制将其沿半径推向外围
+          if (distToCenter < holeRadius) {
+            const angle = Math.atan2(y, x);
+            x = Math.cos(angle) * (holeRadius + 20); // 加上一点缓冲间距
+            y = Math.sin(angle) * (holeRadius + 20);
           }
+          // ==========================================
+
+
+          const collision = placed.some((point) => Math.abs(x - point.x) < safeWidth && Math.abs(y - point.y) < safeHeight);
+          const minScore = placed.reduce((score, point) => {
+            const dx = Math.abs(x - point.x) / safeWidth; const dy = Math.abs(y - point.y) / safeHeight;
+            return Math.min(score, Math.min(dx, dy) + Math.hypot(dx, dy) * .3);
+          }, 99);
+          
+          if (minScore > best.score) { best = { x, y, score: minScore }; }
+          if (!collision) { chosen = { x, y }; break; }
         }
+
+        const x = chosen ? chosen.x : best.x; const y = chosen ? chosen.y : best.y;
+
+        // 维持原有的完美防穿模堆叠算法
+        let maxUnderZ = 0;
+        placed.forEach((point) => {
+          if (Math.abs(x - point.x) < cardWidth && Math.abs(y - point.y) < cardHeight) {
+            if (point.z > maxUnderZ) {
+              maxUnderZ = point.z;
+            }
+          }
+        });
+
+        const baseZ = 10 + seededNoise(layoutSeed + index + 19) * 30;
+        const z = maxUnderZ > 0 ? maxUnderZ + 25 : baseZ;
+
+        placed.push({ x, y, z });
+
+        // 姿态微调
+        const rx = -6 + seededNoise(layoutSeed + index + 29) * 12;
+        const ry = -7 + seededNoise(layoutSeed + index + 41) * 14;
+        const rz = -11 + seededNoise(layoutSeed + index + 53) * 22;
+
+        card.style.setProperty("--x", `${x.toFixed(2)}px`); card.style.setProperty("--y", `${y.toFixed(2)}px`);
+        card.style.setProperty("--z", `${z.toFixed(2)}px`); card.style.setProperty("--rx", `${rx.toFixed(2)}deg`);
+        card.style.setProperty("--ry", `${ry.toFixed(2)}deg`); card.style.setProperty("--rz", `${rz.toFixed(2)}deg`);
+        card.style.setProperty("--start-x", `${(x * .62).toFixed(2)}px`); card.style.setProperty("--start-y", `${(y * .62 + 28).toFixed(2)}px`);
+        card.style.setProperty("--start-z", `${(z - 180).toFixed(2)}px`); card.style.setProperty("--start-rx", `${(rx * 1.8).toFixed(2)}deg`);
+        card.style.setProperty("--start-ry", `${(ry * 1.8).toFixed(2)}deg`); card.style.setProperty("--hover-z", `${(z + 74).toFixed(2)}px`);
+        card.style.setProperty("--hover-rx", `${(rx * .45).toFixed(2)}deg`); card.style.setProperty("--hover-ry", `${(ry * .45).toFixed(2)}deg`);
+        card.append(buildPhotoSurface(photo)); wall.append(card);
+      });
+    }
 
     function relayoutWall() {
       if (isGalleryBusy) return;
@@ -872,10 +1005,78 @@
     function setMode(nextMode) {
       if (mode === nextMode) return; mode = nextMode;
       app.classList.toggle("list-mode", mode === "list"); modeWord.textContent = mode === "list" ? "Focus" : "Session"; resetZoneState();
+      if (mode !== "list") closeSelectedPreview();
     }
 
-    function setReadout(label, text, confidence = .18) {
-      gestureLabel.textContent = label; statusText.textContent = text; confidenceBar.style.setProperty("--confidence", Math.max(.04, Math.min(1, confidence)).toFixed(3));
+    function syncSelectedPreview() {
+      const photo = photos[centerIndex];
+      if (!photo || !photo.src) return false;
+      previewImage.src = photo.src;
+      previewImage.alt = photo.title;
+      previewTitle.textContent = photo.title;
+      previewNumber.textContent = `NO.${String(photo.id).padStart(2, "0")}`;
+      return true;
+    }
+
+    function openSelectedPreview() {
+      if (mode !== "list" || isPreviewOpen) return;
+      if (!syncSelectedPreview()) return;
+      isPreviewOpen = true;
+      app.classList.add("preview-mode");
+      photoPreview.setAttribute("aria-hidden", "false");
+    }
+
+    function closeSelectedPreview() {
+      if (!isPreviewOpen) return;
+      isPreviewOpen = false;
+      app.classList.remove("preview-mode");
+      photoPreview.setAttribute("aria-hidden", "true");
+    }
+
+    function applyPreviewGestureVote(type) {
+      if (mode !== "list") {
+        previewVotes = { point: 0, open: 0 };
+        closeSelectedPreview();
+        return false;
+      }
+
+      if (type === "point") {
+        previewVotes.point += 1;
+        previewVotes.open = 0;
+      } else if (type === "open") {
+        previewVotes.open += 1;
+        previewVotes.point = 0;
+      } else {
+        previewVotes.point = Math.max(0, previewVotes.point - 1);
+        previewVotes.open = Math.max(0, previewVotes.open - 1);
+      }
+
+      if (previewVotes.point >= VOTE_THRESHOLD) openSelectedPreview();
+      if (previewVotes.open >= VOTE_THRESHOLD) closeSelectedPreview();
+      return isPreviewOpen;
+    }
+
+    function setReadout(label, text, confidence = .18, force = false) {
+      const confidenceValue = Math.max(.04, Math.min(1, confidence)).toFixed(3);
+      if (force || readoutCache.label !== label) {
+        gestureLabel.textContent = label;
+        readoutCache.label = label;
+      }
+      if (force || readoutCache.text !== text) {
+        statusText.textContent = text;
+        readoutCache.text = text;
+      }
+      if (force || readoutCache.confidence !== confidenceValue) {
+        confidenceBar.style.setProperty("--confidence", confidenceValue);
+        readoutCache.confidence = confidenceValue;
+      }
+    }
+
+    function setTrackingReadout(label, text, confidence) {
+      const now = performance.now();
+      if (now - lastReadoutAt < READOUT_INTERVAL_MS && readoutCache.label === label && readoutCache.text === text) return;
+      lastReadoutAt = now;
+      setReadout(label, text, confidence);
     }
 
     function syncHandCanvasSize() {
@@ -888,16 +1089,17 @@
         handCanvas.height = height;
       }
       handContext.setTransform(dpr, 0, 0, dpr, 0, 0);
-      return rect;
+      handCanvasRect = { width: rect.width, height: rect.height };
+      return handCanvasRect;
     }
 
     function clearHandTrace() {
-      const rect = syncHandCanvasSize();
+      const rect = handCanvasRect.width ? handCanvasRect : syncHandCanvasSize();
       handContext.clearRect(0, 0, rect.width, rect.height);
     }
 
     function drawHandTrace(landmarks) {
-      const rect = syncHandCanvasSize();
+      const rect = handCanvasRect.width ? handCanvasRect : syncHandCanvasSize();
       const w = rect.width;
       const h = rect.height;
       const point = (landmark) => ({ x: (1 - landmark.x) * w, y: landmark.y * h });
@@ -965,6 +1167,7 @@
       const debug = `[OPT:${averageReach.toFixed(2)}]`;
 
       if (straightFingers >= 3 || (extendedFingers >= 3 && averageReach > 1.32) || (extendedFingers >= 2 && thumbOpen && averageReach > 1.42)) return { type: "open", confidence: Math.max(.45, openScore), palmX: palm.x, palmY: palm.y, debug };
+      if (straightFingers === 1 && extendedFingers <= 2 && curledFingers >= 3 && averageReach < 1.72) return { type: "point", confidence: .68, palmX: palm.x, palmY: palm.y, debug };
       if (curledFingers >= 3 && straightFingers <= 1 && averageReach < 1.62) return { type: "fist", confidence: Math.max(.45, fistScore), palmX: palm.x, palmY: palm.y, debug };
       return { type: "tracking", confidence: Math.max(.18, openScore * .58), palmX: palm.x, palmY: palm.y, debug };
     }
@@ -976,15 +1179,28 @@
       if (gestureVotes.open >= VOTE_THRESHOLD) setMode("list"); if (gestureVotes.fist >= VOTE_THRESHOLD) setMode("wall");
     }
 
-    function updatePalmIndicator(palmX, palmY) { palmDot.classList.add("active"); palmDot.style.left = `${(1 - palmX) * 100}%`; palmDot.style.top = `${palmY * 100}%`; }
-    function resetZoneState() { zoneState = { current: "center", lastTriggerAt: performance.now() }; }
-    function stepCarousel(direction) { centerIndex += direction; centerIndex = Math.max(0, Math.min(PHOTO_COUNT - 1, centerIndex)); updateCarousel(); }
+    function updatePalmIndicator(palmX, palmY) {
+      if (!palmDot.classList.contains("active")) palmDot.classList.add("active");
+      const rect = handCanvasRect.width ? handCanvasRect : syncHandCanvasSize();
+      palmDot.style.setProperty("--px", `${((1 - palmX) * rect.width).toFixed(1)}px`);
+      palmDot.style.setProperty("--py", `${(palmY * rect.height).toFixed(1)}px`);
+    }
+    function resetZoneState() { zoneState = { current: "center", lastTriggerAt: 0 }; }
+    function stepCarousel(direction) {
+      centerIndex += direction;
+      centerIndex = Math.max(0, Math.min(PHOTO_COUNT - 1, centerIndex));
+      updateCarousel();
+      if (isPreviewOpen) syncSelectedPreview();
+    }
     function zoneFromPalm(palmX) { const visualX = 1 - palmX; if (visualX < 1 / 3) return "left"; if (visualX > 2 / 3) return "right"; return "center"; }
 
     function updateListFromPalm(palmX) {
       const now = performance.now(), nextZone = zoneFromPalm(palmX);
-      if (nextZone === zoneState.current) return;
-      zoneState.current = nextZone; if (nextZone === "center") return;
+      if (nextZone !== zoneState.current) {
+        zoneState.current = nextZone;
+        zoneState.lastTriggerAt = nextZone === "center" ? 0 : now - ZONE_STEP_COOLDOWN;
+      }
+      if (nextZone === "center") return;
       if (now - zoneState.lastTriggerAt < ZONE_STEP_COOLDOWN) return;
       stepCarousel(nextZone === "left" ? -1 : 1); zoneState.lastTriggerAt = now;
     }
@@ -996,7 +1212,7 @@
         const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
         const createLandmarker = (delegate) => HandLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task", delegate }, runningMode: "VIDEO", numHands: 1, minHandDetectionConfidence: .35, minHandPresenceConfidence: .35, minTrackingConfidence: .35 });
         try { handLandmarker = await createLandmarker("GPU"); } catch (gpuError) { handLandmarker = await createLandmarker("CPU"); }
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 960 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }, audio: false });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 24 } }, audio: false });
         video.srcObject = stream; hasCamera = true;
         await new Promise((resolve) => { if (video.readyState >= 2) { resolve(); return; } video.onloadedmetadata = resolve; });
         await video.play(); setReadout("Standby", "Awaiting gestures.", .32);
@@ -1011,20 +1227,25 @@
       if (isGalleryBusy) { requestAnimationFrame(detectFrame); return; }
       if (!handLandmarker || !hasCamera || video.readyState < 2) { requestAnimationFrame(detectFrame); return; }
       const now = performance.now();
+      if (now - lastDetectionAt < DETECTION_INTERVAL_MS) { requestAnimationFrame(detectFrame); return; }
       if (video.currentTime !== lastVideoTime) {
+        lastDetectionAt = now;
         lastVideoTime = video.currentTime; const result = handLandmarker.detectForVideo(video, now);
         if (result.landmarks && result.landmarks.length > 0) {
           drawHandTrace(result.landmarks[0]);
-          const gesture = recognizeGesture(result.landmarks[0]); applyGestureVote(gesture.type); updatePalmIndicator(gesture.palmX, gesture.palmY);
-          if (mode === "list") updateListFromPalm(gesture.palmX);
-          const labels = { open: "Palm Active", fist: "Fist Active", tracking: "Tracking" };
+          const gesture = recognizeGesture(result.landmarks[0]);
+          const previewActive = applyPreviewGestureVote(gesture.type);
+          if (gesture.type !== "point") applyGestureVote(gesture.type);
+          updatePalmIndicator(gesture.palmX, gesture.palmY);
+          if (mode === "list" && !previewActive) updateListFromPalm(gesture.palmX);
+          const labels = { open: "Palm Active", fist: "Fist Active", point: "Preview Active", tracking: "Tracking" };
           const navText = mode === "list" ? ` | Frame ${centerIndex + 1}/${PHOTO_COUNT}` : "";
-          const modeText = `${mode === "list" ? "Focus plane." : "Memory wall."} ${gesture.debug}${navText}`;
-          setReadout(labels[gesture.type], modeText, gesture.confidence);
+          const modeText = `${previewActive ? "Large preview." : (mode === "list" ? "Focus plane." : "Memory wall.")} ${gesture.debug}${navText}`;
+          setTrackingReadout(labels[gesture.type], modeText, gesture.confidence);
         } else {
           clearHandTrace();
-          palmDot.classList.remove("active"); applyGestureVote("none"); if (mode === "list") resetZoneState();
-          setReadout("Scanning", mode === "list" ? "Focus plane active." : "Memory wall active.", .16);
+          palmDot.classList.remove("active"); applyGestureVote("none"); applyPreviewGestureVote("none"); if (mode === "list") resetZoneState();
+          setTrackingReadout("Scanning", mode === "list" ? "Focus plane active." : "Memory wall active.", .16);
         }
       }
       requestAnimationFrame(detectFrame);
@@ -1043,7 +1264,8 @@
         setGalleryBusy(false, "Loading Reel", "Preparing frames...");
         folderButton.addEventListener("click", pickPhotoFolder);
         folderInput.addEventListener("change", async () => { await applySelectedFiles(loadImagesFromFileList(folderInput.files || [])); folderInput.value = ""; });
-        window.addEventListener("resize", () => { updateCarousel(); window.clearTimeout(wallResizeTimer); wallResizeTimer = window.setTimeout(relayoutWall, 160); }, { passive: true });
+        window.addEventListener("resize", () => { syncHandCanvasSize(); updateCarousel(); window.clearTimeout(wallResizeTimer); wallResizeTimer = window.setTimeout(relayoutWall, 160); }, { passive: true });
+        syncHandCanvasSize();
         initHandTracking();
       }
     }
