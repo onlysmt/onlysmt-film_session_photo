@@ -174,6 +174,10 @@
     }
 
     .photo-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; opacity: 0.92; }
+    .app.is-loading .wall,
+    .app.is-loading .carousel-shell { pointer-events: none; filter: sepia(.25) saturate(.55) brightness(.72); }
+    .app.is-loading .photo-card,
+    .app.is-loading .carousel-card { animation-play-state: paused; transition-duration: .2s; }
 
     /* 胶片边缘帧数标识 */
     .photo-label {
@@ -289,6 +293,32 @@
       letter-spacing: .12em; text-transform: uppercase; font-family: "Courier New", monospace; transition: transform .18s ease, background .18s ease;
     }
     .folder-button:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-1px); }
+    .folder-button:disabled { cursor: wait; opacity: .55; transform: none; }
+
+    .loading-overlay {
+      position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 24px;
+      pointer-events: none; opacity: 0; transition: opacity .28s ease;
+      background: radial-gradient(circle at 50% 46%, rgba(20, 15, 10, .42), rgba(10, 7, 5, .72) 74%);
+      backdrop-filter: blur(4px);
+    }
+    .app.is-loading .loading-overlay { pointer-events: auto; opacity: 1; }
+    .loading-panel {
+      display: grid; justify-items: center; gap: 12px; min-width: min(320px, calc(100vw - 48px)); padding: 22px 24px 20px;
+      border: 1px solid rgba(212, 178, 113, .32); border-radius: 2px;
+      background: rgba(20, 15, 10, .72); box-shadow: 0 24px 70px rgba(0, 0, 0, .55), inset 0 1px rgba(255,255,255,.06);
+    }
+    .loading-reel {
+      width: 48px; height: 48px; border: 4px solid rgba(212, 178, 113, .5); border-radius: 50%;
+      background: repeating-conic-gradient(from 0deg, transparent 0deg 34deg, rgba(217, 122, 108, .68) 34deg 44deg);
+      box-shadow: inset 0 0 14px rgba(0,0,0,.8), 0 0 24px rgba(212, 178, 113, .22);
+      animation: spinReel 1.1s linear infinite;
+    }
+    .loading-panel strong { color: var(--gold); font-family: "Courier New", monospace; font-size: 14px; letter-spacing: .18em; text-transform: uppercase; }
+    .loading-panel span { color: var(--paper); font-size: 12px; opacity: .76; text-align: center; line-height: 1.6; }
+    body.gallery-loading .projection-beam,
+    body.gallery-loading .projection-screen,
+    body.gallery-loading .vp-reel,
+    body.gallery-loading .countdown-flasher * { animation-play-state: paused; }
     @keyframes cardIn {
       0% {
         opacity: 0;
@@ -464,6 +494,14 @@
       </div>
     </section>
 
+    <div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite" aria-hidden="true">
+      <div class="loading-panel">
+        <div class="loading-reel" aria-hidden="true"></div>
+        <strong id="loadingTitle">Loading Reel</strong>
+        <span id="loadingDetail">Preparing frames...</span>
+      </div>
+    </div>
+
     <aside class="status" aria-live="polite">
       <div class="camera-frame">
         <video id="camera" autoplay playsinline muted></video>
@@ -510,6 +548,9 @@
     const modeWord = document.getElementById("modeWord");
     const folderButton = document.getElementById("folderButton");
     const folderInput = document.getElementById("folderInput");
+    const loadingOverlay = document.getElementById("loadingOverlay");
+    const loadingTitle = document.getElementById("loadingTitle");
+    const loadingDetail = document.getElementById("loadingDetail");
 
     const filmBrands = ["IMAX 70MM", "KODAK VISION3", "ILFORD ORTHO", "FUJIFILM ETERNA", "AGFA GEVAERT"];
 
@@ -529,12 +570,67 @@
     let zoneState = { current: "center", lastTriggerAt: 0 };
     let wallResizeTimer;
     let activeObjectUrls = [];
+    let isGalleryBusy = false;
+    let detectionLoopStarted = false;
     const layoutSeed = Math.random() * 100000;
 
     function seededNoise(seed) { const x = Math.sin(seed * 999.123) * 10000; return x - Math.floor(x); }
     function clampValue(value, min, max) { return Math.max(min, Math.min(max, value)); }
     function centeredNoise(seed, scale) { const average = (seededNoise(seed) + seededNoise(seed + 17) + seededNoise(seed + 37)) / 3; return (average - .5) * 2 * scale; }
     function seededRange(seed, min, max) { return min + seededNoise(seed) * (max - min); }
+    function nextFrame() { return new Promise((resolve) => requestAnimationFrame(() => resolve())); }
+    async function settlePaint(frameCount = 2) { for (let i = 0; i < frameCount; i += 1) await nextFrame(); }
+
+    function setGalleryBusy(isBusy, title = "Loading Reel", detail = "Preparing frames...") {
+      isGalleryBusy = isBusy;
+      app.classList.toggle("is-loading", isBusy);
+      document.body.classList.toggle("gallery-loading", isBusy);
+      folderButton.disabled = isBusy;
+      loadingOverlay.setAttribute("aria-hidden", isBusy ? "false" : "true");
+      loadingTitle.textContent = title;
+      loadingDetail.textContent = detail;
+      if (isBusy) {
+        palmDot.classList.remove("active");
+        clearHandTrace();
+        setReadout("Loading Reel", detail, .38);
+      }
+    }
+
+    function updateLoadingDetail(detail, confidence = .42) {
+      loadingDetail.textContent = detail;
+      setReadout("Loading Reel", detail, confidence);
+    }
+
+    function decodeImageSource(src) {
+      if (!src) return Promise.resolve();
+      return new Promise((resolve) => {
+        const image = new Image();
+        image.decoding = "async";
+        image.onload = async () => {
+          try {
+            if (image.decode) await image.decode();
+          } catch (error) {
+          }
+          resolve();
+        };
+        image.onerror = resolve;
+        image.src = src;
+      });
+    }
+
+    async function preloadPhotoImages(photoList) {
+      const sources = photoList.filter((photo) => photo.src).map((photo) => photo.src);
+      if (sources.length === 0) {
+        updateLoadingDetail("Preparing empty film slots...", .48);
+        await nextFrame();
+        return;
+      }
+      for (let index = 0; index < sources.length; index += 4) {
+        updateLoadingDetail(`Decoding frames ${Math.min(index + 4, sources.length)}/${sources.length}...`, .44 + Math.min(.28, index / Math.max(1, sources.length) * .28));
+        await Promise.all(sources.slice(index, index + 4).map(decodeImageSource));
+        await nextFrame();
+      }
+    }
 
     function buildPhotoSurface(photo) {
       const surface = document.createElement("div");
@@ -545,7 +641,7 @@
         image.className = "photo-image";
         image.src = photo.src;
         image.alt = photo.title;
-        image.loading = "eager"; image.decoding = "async";
+        image.loading = "lazy"; image.decoding = "async";
         surface.append(image);
       }
       
@@ -582,9 +678,13 @@
       });
     }
 
-    function refreshGalleries() {
+    async function refreshGalleries() {
       wall.replaceChildren(); carousel.replaceChildren(); centerIndex = Math.floor(PHOTO_COUNT / 2);
-      renderWall(); renderCarousel();
+      updateLoadingDetail("Placing frames on the wall...", .68);
+      await renderWall();
+      updateLoadingDetail("Threading focus reel...", .82);
+      await renderCarousel();
+      await settlePaint(2);
     }
 
     function normalizeFolderUrl(href) { return new URL(href, new URL(PHOTO_FOLDER, window.location.href)).href; }
@@ -609,36 +709,63 @@
     }
 
     async function loadImagesFromDirectoryHandle(handle) {
-      const files = [];
+      const entries = [];
       for await (const entry of handle.values()) {
         if (entry.kind !== "file" || !isImagePath(entry.name)) continue;
-        files.push(await entry.getFile());
+        entries.push(entry);
       }
-      return files;
+      entries.sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN", { numeric: true, sensitivity: "base" }));
+      updateLoadingDetail(`Reading ${Math.min(entries.length, PHOTO_COUNT)} selected files...`, .34);
+      return Promise.all(entries.slice(0, PHOTO_COUNT).map((entry) => entry.getFile()));
     }
 
     function loadImagesFromFileList(fileList) { return Array.from(fileList).filter((file) => isImagePath(file.name)); }
 
-    function applySelectedFiles(files) {
-      revokeObjectUrls();
+    async function applySelectedFiles(files, keepBusy = false) {
+      if (isGalleryBusy && !keepBusy) return;
+      const nextUrls = [];
+      const previousPhotos = photos;
+      if (keepBusy) updateLoadingDetail("Reading selected frames...", .38);
+      else setGalleryBusy(true, "Loading Reel", "Reading selected frames...");
       const sources = files.sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN", { numeric: true, sensitivity: "base" })).slice(0, PHOTO_COUNT).map((file) => {
-        const src = URL.createObjectURL(file); activeObjectUrls.push(src); return { src, title: file.name };
+        const src = URL.createObjectURL(file); nextUrls.push(src); return { src, title: file.name };
       });
-      setPhotosFromSources(sources); refreshGalleries();
-      setReadout("Reel Loaded", `${sources.length}/${PHOTO_COUNT} frames processed.`, .78);
+      try {
+        setPhotosFromSources(sources);
+        await preloadPhotoImages(photos);
+        const previousObjectUrls = activeObjectUrls;
+        await refreshGalleries();
+        activeObjectUrls = nextUrls;
+        previousObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+        setReadout("Reel Loaded", `${sources.length}/${PHOTO_COUNT} frames processed.`, .78);
+      } catch (error) {
+        nextUrls.forEach((url) => URL.revokeObjectURL(url));
+        photos = previousPhotos;
+        setReadout("Archive Error", "Could not process selected frames.", .14);
+      } finally {
+        await settlePaint(1);
+        setGalleryBusy(false, "Loading Reel", "Preparing frames...");
+      }
     }
 
     async function pickPhotoFolder() {
+      if (isGalleryBusy) return;
       try {
         if ("showDirectoryPicker" in window) {
+          setGalleryBusy(true, "Loading Reel", "Opening photo archive...");
           const handle = await window.showDirectoryPicker({ mode: "read" });
-          applySelectedFiles(await loadImagesFromDirectoryHandle(handle)); return;
+          const files = await loadImagesFromDirectoryHandle(handle);
+          await applySelectedFiles(files, true); return;
         }
         folderInput.click();
-      } catch (error) { if (error && error.name === "AbortError") return; setReadout("Archive Error", "Could not read records.", .14); }
+      } catch (error) {
+        setGalleryBusy(false, "Loading Reel", "Preparing frames...");
+        if (error && error.name === "AbortError") return;
+        setReadout("Archive Error", "Could not read records.", .14);
+      }
     }
 
-    function renderWall() {
+    async function renderWall() {
           const rect = wall.getBoundingClientRect(); const mobile = window.innerWidth <= 760;
           const cardWidth = mobile ? clampValue(window.innerWidth * .20, 80, 110) : clampValue(window.innerWidth * .085, 100, 160);
           const cardHeight = cardWidth * 1.33;
@@ -649,7 +776,7 @@
           // 改良：让 placed 数组不仅记录 x, y，同时记录并计算每张卡片的最终 z 轴深度
           const placed = [];
 
-          photos.forEach((photo, index) => {
+          for (const [index, photo] of photos.entries()) {
             const card = document.createElement("article"); card.className = "photo-card";
             card.style.setProperty("--delay", `${index * 35}ms`);
 
@@ -710,16 +837,22 @@
             card.style.setProperty("--start-ry", `${(ry * 1.8).toFixed(2)}deg`); card.style.setProperty("--hover-z", `${(z + 74).toFixed(2)}px`);
             card.style.setProperty("--hover-rx", `${(rx * .45).toFixed(2)}deg`); card.style.setProperty("--hover-ry", `${(ry * .45).toFixed(2)}deg`);
             card.append(buildPhotoSurface(photo)); wall.append(card);
-          });
+            if ((index + 1) % 6 === 0) await nextFrame();
+          }
         }
 
-    function relayoutWall() { wall.replaceChildren(); renderWall(); }
+    function relayoutWall() {
+      if (isGalleryBusy) return;
+      wall.replaceChildren();
+      renderWall();
+    }
 
-    function renderCarousel() {
-      photos.forEach((photo) => {
+    async function renderCarousel() {
+      for (const [index, photo] of photos.entries()) {
         const card = document.createElement("article"); card.className = "carousel-card";
         card.append(buildPhotoSurface(photo)); carousel.append(card);
-      });
+        if ((index + 1) % 6 === 0) await nextFrame();
+      }
       updateCarousel();
     }
 
@@ -866,11 +999,16 @@
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 960 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }, audio: false });
         video.srcObject = stream; hasCamera = true;
         await new Promise((resolve) => { if (video.readyState >= 2) { resolve(); return; } video.onloadedmetadata = resolve; });
-        await video.play(); setReadout("Standby", "Awaiting gestures.", .32); requestAnimationFrame(detectFrame);
+        await video.play(); setReadout("Standby", "Awaiting gestures.", .32);
+        if (!detectionLoopStarted) {
+          detectionLoopStarted = true;
+          requestAnimationFrame(detectFrame);
+        }
       } catch (error) { setReadout("Offline", "Optical feed disabled.", .12); palmDot.classList.remove("active"); clearHandTrace(); }
     }
 
     function detectFrame() {
+      if (isGalleryBusy) { requestAnimationFrame(detectFrame); return; }
       if (!handLandmarker || !hasCamera || video.readyState < 2) { requestAnimationFrame(detectFrame); return; }
       const now = performance.now();
       if (video.currentTime !== lastVideoTime) {
@@ -893,11 +1031,21 @@
     }
 
     async function bootstrap() {
-      await preparePhotos(); renderWall(); renderCarousel();
-      folderButton.addEventListener("click", pickPhotoFolder);
-      folderInput.addEventListener("change", () => { applySelectedFiles(loadImagesFromFileList(folderInput.files || [])); folderInput.value = ""; });
-      window.addEventListener("resize", () => { updateCarousel(); window.clearTimeout(wallResizeTimer); wallResizeTimer = window.setTimeout(relayoutWall, 160); }, { passive: true });
-      initHandTracking();
+      setGalleryBusy(true, "Loading Reel", "Scanning photo archive...");
+      try {
+        await preparePhotos();
+        await preloadPhotoImages(photos);
+        await refreshGalleries();
+        await settlePaint(2);
+      } catch (error) {
+        setReadout("Archive Error", "Could not prepare the photo archive.", .14);
+      } finally {
+        setGalleryBusy(false, "Loading Reel", "Preparing frames...");
+        folderButton.addEventListener("click", pickPhotoFolder);
+        folderInput.addEventListener("change", async () => { await applySelectedFiles(loadImagesFromFileList(folderInput.files || [])); folderInput.value = ""; });
+        window.addEventListener("resize", () => { updateCarousel(); window.clearTimeout(wallResizeTimer); wallResizeTimer = window.setTimeout(relayoutWall, 160); }, { passive: true });
+        initHandTracking();
+      }
     }
     bootstrap();
   </script>
