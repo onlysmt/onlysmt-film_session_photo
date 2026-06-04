@@ -296,22 +296,24 @@
     .meter i { position: absolute; inset: 0 auto 0 0; width: 50%; border-radius: inherit; background: linear-gradient(90deg, var(--cyan), var(--gold), var(--hot)); transform-origin: left; transform: scaleX(var(--confidence, .18)); transition: transform .2s ease; }
 
     .camera-frame {
+      --zone-center-x: 50%;
+      --zone-width: 16%;
       position: relative; width: 120px; aspect-ratio: 4 / 3; overflow: hidden; border: 2px solid rgba(138, 115, 96, 0.4);
       border-radius: 2px; background: rgba(5, 5, 5, 0.9); box-shadow: 0 14px 34px rgba(5, 5, 5, 0.8); backdrop-filter: blur(16px);
       isolation: isolate;
     }
     .camera-frame .zone-panel {
-      position: absolute; left: 0; right: 0; z-index: 1; height: 33.333%; pointer-events: none;
+      position: absolute; top: 0; bottom: 0; z-index: 1; pointer-events: none;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
     }
-    .camera-frame .zone-panel.top { top: 0; background-color: rgba(217, 122, 108, 0.08); }
-    .camera-frame .zone-panel.center { top: 33.333%; background-color: rgba(242, 195, 110, 0.055); }
-    .camera-frame .zone-panel.bottom { top: 66.666%; background-color: rgba(138, 154, 134, 0.08); }
+    .camera-frame .zone-panel.left { left: 0; width: max(0px, calc(var(--zone-center-x) - var(--zone-width) / 2)); background-color: rgba(217, 122, 108, 0.08); }
+    .camera-frame .zone-panel.center { left: calc(var(--zone-center-x) - var(--zone-width) / 2); width: var(--zone-width); background-color: rgba(242, 195, 110, 0.08); }
+    .camera-frame .zone-panel.right { left: calc(var(--zone-center-x) + var(--zone-width) / 2); right: 0; background-color: rgba(138, 154, 134, 0.08); }
     .camera-frame::before, .camera-frame::after {
-      position: absolute; left: 0; right: 0; z-index: 3; height: 1px; content: ""; background: rgba(255, 255, 255, 0.16);
+      position: absolute; top: 0; bottom: 0; z-index: 3; width: 1px; content: ""; background: rgba(255, 255, 255, 0.18);
     }
-    .camera-frame::before { top: 33.333%; }
-    .camera-frame::after { top: 66.666%; }
+    .camera-frame::before { left: calc(var(--zone-center-x) - var(--zone-width) / 2); }
+    .camera-frame::after { left: calc(var(--zone-center-x) + var(--zone-width) / 2); }
     .camera-frame video {
       position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);
       opacity: 0 !important; pointer-events: none;
@@ -329,12 +331,12 @@
     .palm-dot.active { opacity: 1; }
 
     .zone-label {
-      position: absolute; left: 0; z-index: 4; width: 100%; color: rgba(255, 255, 255, 0.3); font-size: 8px; font-weight: bold;
+      position: absolute; bottom: 7px; z-index: 4; color: rgba(255, 255, 255, 0.3); font-size: 8px; font-weight: bold;
       letter-spacing: .08em; text-align: center; text-transform: uppercase; pointer-events: none; font-family: "Courier New", monospace;
     }
-    .zone-label.top { top: 7px; color: rgba(217, 122, 108, 0.5); }
-    .zone-label.center { top: calc(50% - 4px); }
-    .zone-label.bottom { bottom: 7px; color: rgba(138, 154, 134, 0.5); }
+    .zone-label.left { left: 5px; color: rgba(217, 122, 108, 0.5); }
+    .zone-label.center { left: calc(var(--zone-center-x) - 22px); width: 44px; color: rgba(242, 195, 110, 0.62); }
+    .zone-label.right { right: 5px; color: rgba(138, 154, 134, 0.5); }
 
     .folder-button {
       width: 100%; min-height: 32px; margin-top: 12px; border: 1px solid rgba(138, 115, 96, 0.3); border-radius: 2px;
@@ -564,13 +566,13 @@
     <aside class="status" aria-live="polite">
       <div class="camera-frame">
         <video id="camera" autoplay playsinline muted></video>
-        <span class="zone-panel top" aria-hidden="true"></span>
+        <span class="zone-panel left" aria-hidden="true"></span>
         <span class="zone-panel center" aria-hidden="true"></span>
-        <span class="zone-panel bottom" aria-hidden="true"></span>
+        <span class="zone-panel right" aria-hidden="true"></span>
         <canvas class="hand-canvas" id="handCanvas" aria-hidden="true"></canvas>
-        <span class="zone-label top">TOP</span>
+        <span class="zone-label left">LEFT</span>
         <span class="zone-label center">CENTER</span>
-        <span class="zone-label bottom">BOTTOM</span>
+        <span class="zone-label right">RIGHT</span>
         <span class="palm-dot" id="palmDot"></span>
       </div>
       <div class="readout">
@@ -596,7 +598,8 @@
     const READOUT_INTERVAL_MS = 180;
     const GALLERY_SETTLE_MS = 2600;
     const VOTE_THRESHOLD = 3;
-    const ZONE_STEP_COOLDOWN = 500;
+    const ZONE_STEP_COOLDOWN = 800;
+    const DYNAMIC_CENTER_WIDTH = .16;
     const PHOTO_FOLDER = "\u7167\u7247/";
     const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp", "bmp", "avif", "svg"]);
     const app = document.getElementById("app");
@@ -615,6 +618,7 @@
     const loadingOverlay = document.getElementById("loadingOverlay");
     const loadingTitle = document.getElementById("loadingTitle");
     const loadingDetail = document.getElementById("loadingDetail");
+    const cameraFrame = document.querySelector(".camera-frame");
     const photoPreview = document.getElementById("photoPreview");
     const previewImage = document.getElementById("previewImage");
     const previewTitle = document.getElementById("previewTitle");
@@ -638,11 +642,13 @@
     let isPreviewOpen = false;
     let hasCamera = false;
     let zoneState = { current: "center", lastTriggerAt: 0 };
+    let dynamicCenterX = .5;
     let wallResizeTimer;
     let activeObjectUrls = [];
     let isGalleryBusy = false;
     let detectionLoopStarted = false;
     let lastDetectionAt = 0;
+    let lastGestureType = "none";
     let lastReadoutAt = 0;
     let readoutCache = { label: "", text: "", confidence: "" };
     let handCanvasRect = { width: 0, height: 0 };
@@ -1005,6 +1011,7 @@
     function setMode(nextMode) {
       if (mode === nextMode) return; mode = nextMode;
       app.classList.toggle("list-mode", mode === "list"); modeWord.textContent = mode === "list" ? "Focus" : "Session"; resetZoneState();
+      if (mode === "list") lastGestureType = "none";
       if (mode !== "list") closeSelectedPreview();
     }
 
@@ -1186,16 +1193,28 @@
       palmDot.style.setProperty("--py", `${(palmY * rect.height).toFixed(1)}px`);
     }
     function resetZoneState() { zoneState = { current: "center", lastTriggerAt: 0 }; }
+    function captureDynamicCenter(palmX) {
+      const halfWidth = DYNAMIC_CENTER_WIDTH / 2;
+      dynamicCenterX = clampValue(1 - palmX, halfWidth, 1 - halfWidth);
+      cameraFrame.style.setProperty("--zone-center-x", `${(dynamicCenterX * 100).toFixed(2)}%`);
+      resetZoneState();
+    }
     function stepCarousel(direction) {
       centerIndex += direction;
       centerIndex = Math.max(0, Math.min(PHOTO_COUNT - 1, centerIndex));
       updateCarousel();
       if (isPreviewOpen) syncSelectedPreview();
     }
-    function zoneFromPalm(palmY) { if (palmY < 1 / 3) return "left"; if (palmY > 2 / 3) return "right"; return "center"; }
+    function zoneFromPalm(palmX) {
+      const visualX = 1 - palmX;
+      const halfWidth = DYNAMIC_CENTER_WIDTH / 2;
+      if (visualX < dynamicCenterX - halfWidth) return "left";
+      if (visualX > dynamicCenterX + halfWidth) return "right";
+      return "center";
+    }
 
-    function updateListFromPalm(palmY) {
-      const now = performance.now(), nextZone = zoneFromPalm(palmY);
+    function updateListFromPalm(palmX) {
+      const now = performance.now(), nextZone = zoneFromPalm(palmX);
       if (nextZone !== zoneState.current) {
         zoneState.current = nextZone;
         zoneState.lastTriggerAt = nextZone === "center" ? 0 : now - ZONE_STEP_COOLDOWN;
@@ -1236,15 +1255,17 @@
           const gesture = recognizeGesture(result.landmarks[0]);
           const previewActive = applyPreviewGestureVote(gesture.type);
           if (gesture.type !== "point") applyGestureVote(gesture.type);
+          if (gesture.type === "open" && lastGestureType !== "open" && mode === "list") captureDynamicCenter(gesture.palmX);
+          lastGestureType = gesture.type;
           updatePalmIndicator(gesture.palmX, gesture.palmY);
-          if (mode === "list" && !previewActive) updateListFromPalm(gesture.palmY);
+          if (mode === "list" && !previewActive) updateListFromPalm(gesture.palmX);
           const labels = { open: "Palm Active", fist: "Fist Active", point: "Preview Active", tracking: "Tracking" };
           const navText = mode === "list" ? ` | Frame ${centerIndex + 1}/${PHOTO_COUNT}` : "";
           const modeText = `${previewActive ? "Large preview." : (mode === "list" ? "Focus plane." : "Memory wall.")} ${gesture.debug}${navText}`;
           setTrackingReadout(labels[gesture.type], modeText, gesture.confidence);
         } else {
           clearHandTrace();
-          palmDot.classList.remove("active"); applyGestureVote("none"); applyPreviewGestureVote("none"); if (mode === "list") resetZoneState();
+          palmDot.classList.remove("active"); applyGestureVote("none"); applyPreviewGestureVote("none"); lastGestureType = "none"; if (mode === "list") resetZoneState();
           setTrackingReadout("Scanning", mode === "list" ? "Focus plane active." : "Memory wall active.", .16);
         }
       }
