@@ -3,652 +3,303 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gesture Photo Gallery</title>
+  <title>Film Memory Projection Gallery</title>
   <style>
+    /* =========================================
+       1. 核心色调与字体
+       ========================================= */
     :root {
-      --ink: #27455a;
-      --muted: rgba(39, 69, 90, .66);
-      --panel: rgba(255, 255, 255, .68);
-      --line: rgba(69, 133, 141, .22);
-      --hot: #ff8068;
-      --cyan: #49bfc0;
-      --gold: #f2c36e;
-      --mint: #a8e6cf;
-      --sky: #77cfe4;
-      --paper: #fffdf6;
-      --bg-a: #fdfcf0;
-      --bg-b: #f5f7f8;
-      --shadow: 0 18px 44px rgba(55, 114, 126, .18);
+      --ink: #3b2f2f; 
+      --muted: rgba(59, 47, 47, .66);
+      --panel: rgba(245, 238, 226, .85);
+      --line: rgba(138, 115, 96, .3);
+      --hot: #d97a6c;
+      --cyan: #8a9a86; 
+      --gold: #d4b271;
+      --mint: #e2d5c3; 
+      --sky: #a3b1c6;
+      --paper: #f4eee1; 
+      --bg-a: #e8dcc7;
+      --bg-b: #d6c6ac;
+      --shadow: 0 18px 44px rgba(40, 30, 20, .3);
       color-scheme: light;
-      font-family: "Aptos Display", "Segoe UI", "Microsoft YaHei UI", sans-serif;
+      font-family: "Courier New", Courier, "Kaiti SC", "楷体", serif;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    html,
-    body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: var(--bg-a);
-      color: var(--ink);
-      perspective: 2000px;
+    html, body {
+      width: 100%; height: 100%; margin: 0; overflow: hidden;
+      background: var(--bg-a); color: var(--ink); perspective: 2000px;
     }
+    body { min-width: 320px; min-height: 560px; }
 
-    body {
-      min-width: 320px;
-      min-height: 560px;
-    }
-
+    /* =========================================
+       2. 背景光影与放映机特效 (Projector & Beam)
+       ========================================= */
     body::before {
-      position: fixed;
-      inset: -18px;
-      z-index: -3;
-      content: "";
-      background-image: url("assets/background.png");
-      background-size: cover;
-      background-position: center;
-      filter: blur(8px) brightness(1.02) saturate(1.04);
-      transform: scale(1.04);
+      position: fixed; inset: -18px; z-index: -5; content: "";
+      background-image: url("assets/background.png"); background-size: cover; background-position: center;
+      filter: blur(8px) sepia(0.4) contrast(1.1) brightness(0.6) saturate(0.8); transform: scale(1.04);
     }
 
     body::after {
-      position: fixed;
-      inset: 0;
-      z-index: -2;
-      pointer-events: none;
-      content: "";
-      background:
-        linear-gradient(135deg, rgba(253, 252, 240, .68) 0%, rgba(236, 252, 248, .48) 52%, rgba(245, 247, 248, .58) 100%),
-        radial-gradient(circle at 45% 22%, rgba(255, 255, 255, .58), transparent 0 28%, transparent 54%);
-    }
-
-    .grain {
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      pointer-events: none;
-      opacity: .1;
-      background-image:
-        repeating-radial-gradient(circle at 30% 10%, rgba(255, 255, 255, .8) 0 1px, transparent 1px 6px);
-      mix-blend-mode: overlay;
-    }
-
-    body::before {
-      background-image: url("演示/生成插画背景图.png");
-      filter: blur(8px) brightness(.9);
-    }
-
-    body::after {
-      background: none;
-      background-color: rgba(236, 252, 248, .5);
-    }
-
-    .app {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      min-height: 560px;
-      perspective: 2000px;
-    }
-
-    .title-lockup {
-      position: fixed;
-      top: clamp(18px, 4vw, 36px);
-      left: clamp(18px, 4vw, 42px);
-      z-index: 12;
-      width: min(390px, calc(100vw - 36px));
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .eyebrow {
-      margin: 0 0 8px;
-      color: #168f9d;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: .18em;
-      text-transform: uppercase;
-    }
-
-    h1 {
-      margin: 0;
-      max-width: 360px;
-      font-size: clamp(30px, 5vw, 64px);
-      line-height: .92;
-      letter-spacing: 0;
-      text-wrap: balance;
-      color: rgba(39, 69, 90, .9);
-      text-shadow: 0 4px 24px rgba(255, 255, 255, .78);
-    }
-
-    .mode-word {
-      display: inline-block;
-      color: #f08a4b;
-      transform: translateY(-.04em);
-    }
-
-    .stage {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      transform-style: preserve-3d;
-    }
-
-    .wall {
-      position: relative;
-      width: calc(100vw - 100px);
-      height: calc(100vh - 100px);
-      transform-style: preserve-3d;
-      transition: opacity .55s ease, transform .7s cubic-bezier(.2, .8, .2, 1), filter .55s ease;
-    }
-
-    .app.list-mode .wall {
-      opacity: .24;
-      filter: blur(8px) saturate(.86) brightness(1.08);
-      transform: translateZ(-260px) rotateX(12deg) scale(.78);
-      pointer-events: none;
-    }
-
-    .photo-card {
-      --x: 0px;
-      --y: 0px;
-      --z: 0px;
-      --rx: 0deg;
-      --ry: 0deg;
-      --rz: 0deg;
-      --start-x: 0px;
-      --start-y: 0px;
-      --start-z: -180px;
-      --start-rx: 0deg;
-      --start-ry: 0deg;
-      --hover-z: 74px;
-      --hover-rx: 0deg;
-      --hover-ry: 0deg;
-      --h: 20;
-      --delay: 0ms;
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: clamp(76px, 6.2vw, 116px);
-      aspect-ratio: 4 / 5;
-      padding: 0;
-      border: 2px solid #A8E6CF;
-      border-radius: 8px;
-      background: white;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, .1);
-      color: #777;
-      font-weight: bold;
-      backface-visibility: hidden;
-      transform:
-        translate3d(calc(-50% + var(--x)), calc(-50% + var(--y)), var(--z))
-        rotateX(var(--rx))
-        rotateY(var(--ry))
-        rotateZ(var(--rz));
-      transform-style: preserve-3d;
-      transition: transform .65s cubic-bezier(.2, .8, .2, 1), opacity .55s ease;
-      animation: cardIn .95s cubic-bezier(.2, .8, .2, 1) both;
-      animation-delay: var(--delay);
-    }
-
-    .photo-card::before {
-      position: absolute;
-      inset: 7px;
-      z-index: -1;
-      content: "";
-      border-radius: 7px;
-      background: rgba(0, 0, 0, .08);
-      transform: translateZ(-16px);
-      filter: blur(12px);
-    }
-
-    .photo-card:hover {
-      transform:
-        translate3d(calc(-50% + var(--x)), calc(-50% + var(--y)), var(--hover-z))
-        rotateX(var(--hover-rx))
-        rotateY(var(--hover-ry))
-        rotateZ(var(--rz))
-        scale(1.04);
-    }
-
-    .photo-surface {
-      position: relative;
-      display: grid;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      place-items: center;
-      border-radius: 6px;
-      background: white;
-      isolation: isolate;
-    }
-
-    .photo-image {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center;
-      display: block;
-    }
-
-    .photo-surface::before {
-      position: absolute;
-      inset: 0;
-      content: "";
-      background: transparent;
-      opacity: 0;
-    }
-
-    .photo-surface::after {
-      position: absolute;
-      right: 12%;
-      bottom: 12%;
-      width: 44%;
-      aspect-ratio: 1;
-      content: "";
-      border: 0;
-      border-radius: 50%;
-      transform: rotate(-18deg);
-      opacity: .38;
-    }
-
-    .photo-label {
-      position: relative;
-      z-index: 2;
-      padding: 0;
-      font-size: clamp(18px, 2vw, 30px);
-      font-weight: 800;
-      letter-spacing: 0;
-      color: #777;
-      text-shadow: none;
-    }
-
-    .carousel-shell {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      opacity: 0;
-      transform: translateY(22px) translateZ(140px);
-      pointer-events: none;
-      transition: opacity .45s ease, transform .58s cubic-bezier(.2, .8, .2, 1);
-      transform-style: preserve-3d;
-    }
-
-    .app.list-mode .carousel-shell {
-      opacity: 1;
-      transform: translateY(0) translateZ(170px);
-      pointer-events: auto;
-    }
-
-    .carousel {
-      position: relative;
-      width: 100vw;
-      height: min(560px, 68vh);
-      transform-style: preserve-3d;
-    }
-
-    .carousel-card {
-      --dx: 0;
-      --abs: 0;
-      --tx: -50%;
-      --tz: 0px;
-      --scale: 1;
-      --opacity: 1;
-      --rot-y: 0deg;
-      --rot-z: 0deg;
-      --sat: 1;
-      --h: 20;
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: clamp(138px, 20vw, 330px);
-      aspect-ratio: 4 / 5;
-      padding: 0;
-      border: 2px solid #A8E6CF;
-      border-radius: 8px;
-      background: white;
-      box-shadow: 0 18px 45px rgba(0, 0, 0, .16);
-      transform:
-        translate3d(var(--tx), -50%, var(--tz))
-        rotateY(var(--rot-y))
-        rotateZ(var(--rot-z))
-        scale(var(--scale));
-      opacity: var(--opacity);
-      transition: transform .18s ease-out, opacity .18s ease-out, filter .18s ease-out;
-      filter: saturate(var(--sat));
-      transform-style: preserve-3d;
-      pointer-events: none;
-    }
-
-    .carousel-card[data-hidden="true"] {
-      opacity: 0;
-    }
-
-    .carousel-card .photo-surface {
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .6);
-    }
-
-    .carousel-card .photo-label {
-      font-size: clamp(16px, 2.1vw, 25px);
-      padding: 0;
-    }
-
-    .status {
-      position: fixed;
-      right: clamp(14px, 3vw, 30px);
-      bottom: clamp(14px, 3vw, 30px);
-      z-index: 14;
-      display: grid;
-      grid-template-columns: 120px minmax(160px, 230px);
-      gap: 12px;
-      align-items: end;
-    }
-
-    .camera-frame {
-      position: relative;
-      width: 120px;
-      aspect-ratio: 4 / 3;
-      overflow: hidden;
-      border: 2px solid rgba(168, 230, 207, .92);
-      border-radius: 8px;
-      background:
-        linear-gradient(90deg, rgba(255, 128, 104, .18), rgba(255, 255, 255, .48) 33.2%, rgba(255, 255, 255, .78) 33.3%, rgba(255, 255, 255, .54) 66.6%, rgba(73, 191, 192, .2) 66.7%, rgba(73, 191, 192, .28)),
-        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .86), transparent 0 9%, transparent 36%),
-        rgba(255, 253, 246, .72);
-      box-shadow: 0 14px 34px rgba(55, 114, 126, .2), inset 0 1px rgba(255, 255, 255, .95);
-      backdrop-filter: blur(16px);
-    }
-
-    .camera-frame::before,
-    .camera-frame::after {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      z-index: 2;
-      width: 1px;
-      content: "";
-      background: rgba(55, 114, 126, .22);
-    }
-
-    .camera-frame::before {
-      left: 33.333%;
-    }
-
-    .camera-frame::after {
-      left: 66.666%;
-    }
-
-    .zone-label {
-      position: absolute;
-      bottom: 7px;
-      z-index: 3;
-      width: 33.333%;
-      color: rgba(39, 69, 90, .46);
-      font-size: 9px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-align: center;
-      text-transform: uppercase;
-      pointer-events: none;
-    }
-
-    .zone-label.left {
-      left: 0;
-      color: rgba(219, 93, 72, .72);
-    }
-
-    .zone-label.center {
-      left: 33.333%;
-    }
-
-    .zone-label.right {
-      left: 66.666%;
-      color: rgba(21, 143, 157, .72);
-    }
-
-    .camera-frame video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transform: scaleX(-1);
-      opacity: 0;
-    }
-
-    .palm-dot {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      z-index: 4;
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255, 255, 255, .98);
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 0;
-      background: rgba(73, 191, 192, .68);
-      box-shadow: 0 0 0 6px rgba(73, 191, 192, .16), 0 0 22px rgba(73, 191, 192, .62);
-      transition: opacity .18s ease;
-    }
-
-    .palm-dot.active {
-      opacity: 1;
-    }
-
-    .readout {
-      min-height: 92px;
-      padding: 14px 15px;
-      border: 1px solid rgba(168, 230, 207, .72);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, .62);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, .1), inset 0 1px rgba(255, 255, 255, .78);
-      backdrop-filter: blur(18px);
-    }
-
-    .readout strong {
-      display: block;
-      margin-bottom: 7px;
-      color: var(--ink);
-      font-size: 13px;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-    }
-
-    .readout span {
-      display: block;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .meter {
-      position: relative;
-      width: 100%;
-      height: 3px;
-      margin-top: 12px;
-      overflow: hidden;
-      border-radius: 999px;
-      background: rgba(55, 114, 126, .12);
-    }
-
-    .meter i {
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: 50%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, var(--cyan), var(--gold), var(--hot));
-      transform-origin: left;
-      transform: scaleX(var(--confidence, .18));
-      transition: transform .2s ease;
-    }
-
-    .folder-button {
-      width: 100%;
-      min-height: 32px;
-      margin-top: 12px;
-      border: 1px solid rgba(168, 230, 207, .92);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, .72);
-      color: #27455a;
-      cursor: pointer;
-      font: inherit;
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      box-shadow: 0 8px 18px rgba(55, 114, 126, .12), inset 0 1px rgba(255, 255, 255, .85);
-      transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
-    }
-
-    .folder-button:hover {
-      background: rgba(255, 255, 255, .9);
-      box-shadow: 0 10px 24px rgba(55, 114, 126, .18), inset 0 1px rgba(255, 255, 255, .9);
-      transform: translateY(-1px);
-    }
-
-    .folder-button:active {
-      transform: translateY(0);
-    }
-
-    .ambient-ring {
-      position: fixed;
-      left: 50%;
-      top: 50%;
-      z-index: 1;
-      width: min(740px, 82vw);
-      aspect-ratio: 1;
-      border: 1px solid rgba(255, 255, 255, .38);
-      border-radius: 50%;
-      transform: translate(-50%, -50%) rotateX(66deg);
-      pointer-events: none;
-      box-shadow:
-        0 0 0 22px rgba(255, 255, 255, .08),
-        0 0 120px rgba(73, 191, 192, .18);
-    }
-
-    .ambient-ring::before,
-    .ambient-ring::after {
-      position: absolute;
-      inset: 9%;
-      content: "";
-      border: 1px solid rgba(242, 195, 110, .22);
-      border-radius: 50%;
-    }
-
-    .ambient-ring::after {
-      inset: 22%;
-      border-color: rgba(255, 128, 104, .2);
-    }
-
-    @keyframes cardIn {
-      from {
-        opacity: 0;
-        transform:
-          translate3d(calc(-50% + var(--start-x)), calc(-50% + var(--start-y)), var(--start-z))
-          rotateX(var(--start-rx))
-          rotateY(var(--start-ry))
-          rotateZ(var(--rz))
-          scale(.74);
-      }
-      to {
-        opacity: 1;
-      }
-    }
-
-    .grain,
-    .ambient-ring {
-      display: none !important;
-      opacity: 0 !important;
-      background: none !important;
-      box-shadow: none !important;
-    }
-
-    body::before {
-      display: none !important;
-      background: none !important;
-    }
-
-    body::after {
-      background: rgba(209, 238, 238, 0.2) !important;
+      position: fixed; inset: 0; z-index: 10; pointer-events: none; content: "";
+      background: radial-gradient(circle at 50% 50%, transparent 20%, rgba(10, 8, 5, 0.9) 120%);
+      mix-blend-mode: multiply;
     }
 
     .background-video {
-      position: fixed;
-      inset: -18px;
-      z-index: -3;
-      width: calc(100vw + 36px);
-      height: calc(100vh + 36px);
-      object-fit: cover;
-      object-position: center;
-      filter: blur(1px) brightness(.9);
-      transform: scale(1.0);
+      position: fixed; inset: -18px; z-index: -5; width: calc(100vw + 36px); height: calc(100vh + 36px);
+      object-fit: cover; object-position: center;
+      filter: blur(3px) sepia(0.6) contrast(1.2) brightness(0.5) saturate(0.6);
       pointer-events: none;
     }
 
-    @media (max-width: 760px) {
-      .title-lockup {
-        top: 16px;
-      }
-
-      .eyebrow {
-        font-size: 10px;
-      }
-
-      h1 {
-        max-width: 250px;
-      }
-
-      .wall {
-        height: 78vh;
-      }
-
-      .photo-card {
-        width: clamp(62px, 16vw, 88px);
-      }
-
-      .status {
-        grid-template-columns: 86px minmax(0, 1fr);
-        right: 12px;
-        bottom: 12px;
-        left: 12px;
-      }
-
-      .camera-frame {
-        width: 86px;
-      }
-
-      .readout {
-        min-height: 70px;
-        padding: 11px 12px;
-      }
-
-      .folder-button {
-        min-height: 28px;
-        margin-top: 8px;
-        font-size: 10px;
-      }
-
-      .readout strong,
-      .readout span {
-        font-size: 11px;
-      }
+    .grain {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .18;
+      background-image: repeating-radial-gradient(circle at 30% 10%, rgba(255, 255, 255, .8) 0 1px, transparent 1px 6px);
+      mix-blend-mode: overlay;
     }
 
-    @media (prefers-reduced-motion: reduce) {
-      *,
-      *::before,
-      *::after {
-        scroll-behavior: auto !important;
-        transition-duration: .01ms !important;
-        animation-duration: .01ms !important;
-        animation-iteration-count: 1 !important;
-      }
+    /* 右下角缓缓转动的胶片盘 */
+    .projector-reel {
+      position: fixed; bottom: -15vmin; right: -15vmin;
+      width: 45vmin; height: 45vmin; min-width: 300px; min-height: 300px;
+      z-index: -3; pointer-events: none;
+      border: 8px solid rgba(40, 30, 20, 0.8);
+      border-radius: 50%;
+      background: 
+        radial-gradient(circle at center, transparent 10%, rgba(40, 30, 20, 0.9) 12%, rgba(40, 30, 20, 0.9) 15%, transparent 16%),
+        repeating-conic-gradient(from 0deg, transparent 0deg 25deg, rgba(20, 15, 10, 0.6) 25deg 36deg);
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.9);
+      animation: spinReel 12s linear infinite;
+    }
+    .projector-reel::after {
+      content: ""; position: absolute; inset: 45%; border-radius: 50%;
+      background: rgba(212, 178, 113, 0.2); box-shadow: 0 0 15px rgba(212, 178, 113, 0.4);
+    }
+    @keyframes spinReel { to { transform: rotate(360deg); } }
+
+    /* 放映机投射的光束 (带频闪) */
+    .projection-beam {
+      position: fixed; bottom: 5vmin; right: 5vmin;
+      width: 150vw; height: 150vh; z-index: -4; pointer-events: none;
+      background: linear-gradient(to top left, rgba(255, 240, 210, 0.15) 0%, rgba(255, 240, 210, 0.05) 40%, transparent 60%);
+      transform-origin: bottom right;
+      mix-blend-mode: screen;
+      animation: filmFlicker 0.15s infinite alternate;
+    }
+
+    /* 屏幕中心的淡淡放映区 */
+    .projection-screen {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 70vw; height: 70vh; z-index: -4; pointer-events: none;
+      background: radial-gradient(ellipse at center, rgba(255, 245, 220, 0.12) 0%, transparent 60%);
+      mix-blend-mode: screen;
+      animation: filmFlicker 0.2s infinite alternate-reverse;
+    }
+
+    @keyframes filmFlicker {
+      0% { opacity: 0.85; }
+      100% { opacity: 1; }
+    }
+
+    .app { position: relative; width: 100vw; height: 100vh; min-height: 560px; perspective: 2000px; }
+
+    /* =========================================
+       3. 排版文字
+       ========================================= */
+    .title-lockup {
+      position: fixed; top: clamp(18px, 4vw, 36px); left: clamp(18px, 4vw, 42px);
+      z-index: 12; width: min(390px, calc(100vw - 36px)); opacity: 0; pointer-events: none;
+      animation: fadeIn 2s ease forwards 1s;
+    }
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    .eyebrow { margin: 0 0 8px; color: var(--gold); font-size: 13px; font-weight: bold; letter-spacing: .2em; text-transform: uppercase; }
+    h1 { margin: 0; max-width: 360px; font-size: clamp(30px, 5vw, 64px); line-height: .92; color: var(--paper); text-shadow: 0 4px 24px rgba(0, 0, 0, 0.8); }
+    .mode-word { display: inline-block; color: var(--hot); transform: translateY(-.04em); }
+
+    .stage { position: absolute; inset: 0; display: grid; place-items: center; transform-style: preserve-3d; }
+    .wall {
+      position: relative; width: calc(100vw - 100px); height: calc(100vh - 100px);
+      transform-style: preserve-3d; transition: opacity 0.8s ease, transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.8s ease;
+    }
+    .app.list-mode .wall {
+      opacity: .15; filter: blur(12px) sepia(0.5) saturate(0.6) brightness(0.9);
+      transform: translateZ(-260px) rotateX(12deg) scale(.78); pointer-events: none;
+    }
+
+    /* =========================================
+       4. 卡片重塑：上下齿孔底片
+       ========================================= */
+    .photo-card {
+      --x: 0px; --y: 0px; --z: 0px; --rx: 0deg; --ry: 0deg; --rz: 0deg;
+      --start-x: 0px; --start-y: 0px; --start-z: -180px; --start-rx: 0deg; --start-ry: 0deg;
+      --hover-z: 74px; --hover-rx: 0deg; --hover-ry: 0deg;
+      --h: 20; --delay: 0ms;
+      position: absolute; left: 50%; top: 50%;
+      width: clamp(100px, 9.5vw, 160px);
+      aspect-ratio: 3 / 4;
+      /* 上下预留齿孔空间，左右收窄 */
+      padding: 38px 16px 44px 16px; 
+      background: #111; 
+      border: 1px solid #222; border-radius: 2px;
+      box-shadow: 0 15px 35px rgba(5, 5, 5, 0.8), inset 0 0 15px rgba(0,0,0,0.9);
+      color: var(--ink); backface-visibility: hidden;
+      transform: translate3d(calc(-50% + var(--x)), calc(-50% + var(--y)), var(--z)) rotateX(var(--rx)) rotateY(var(--ry)) rotateZ(var(--rz));
+      transform-style: preserve-3d;
+      transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
+      animation: cardIn 1.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+      animation-delay: var(--delay);
+    }
+
+    /* 纯 CSS 绘制的上下胶片齿孔 (Top/Bottom Sprocket Holes) */
+    .photo-card::before, .photo-card::after {
+      content: ""; position: absolute;
+      left: 12px; right: 12px; height: 10px;
+      background: repeating-linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.18) 0px,
+        rgba(255, 255, 255, 0.18) 6px,
+        transparent 6px,
+        transparent 14px
+      );
+      z-index: 1; border-radius: 1px;
+    }
+    .photo-card::before { top: 12px; }
+    .photo-card::after { bottom: 12px; }
+
+    .photo-card:hover {
+      transform: translate3d(calc(-50% + var(--x)), calc(-50% + var(--y)), var(--hover-z)) rotateX(var(--hover-rx)) rotateY(var(--hover-ry)) rotateZ(var(--rz)) scale(1.15);
+      z-index: 50;
+      box-shadow: 0 35px 55px rgba(0, 0, 0, 0.95), inset 0 0 10px rgba(0,0,0,0.8);
+    }
+
+    .photo-surface {
+      position: relative; display: grid; width: 100%; height: 100%; overflow: hidden; place-items: center;
+      border-radius: 1px; background: #000; isolation: isolate;
+      filter: sepia(0.3) contrast(1.2) saturate(0.85) hue-rotate(-5deg);
+      box-shadow: inset 0 0 12px rgba(0,0,0,0.8);
+    }
+
+    .photo-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; opacity: 0.92; }
+
+    /* 胶片边缘帧数标识 */
+    .photo-label {
+      position: absolute; bottom: 26px; right: 16px; z-index: 2; padding: 0;
+      font-size: clamp(9px, 1vw, 11px); color: var(--gold); 
+      font-family: "Courier New", monospace; letter-spacing: 0.1em; opacity: 0.7;
+    }
+    
+    /* 胶片边缘底片型号标识 */
+    .film-brand {
+      position: absolute; top: 26px; left: 16px; z-index: 2;
+      color: var(--gold); font-size: clamp(8px, 0.8vw, 10px);
+      font-family: "Courier New", monospace; letter-spacing: 0.1em; opacity: 0.7; white-space: nowrap;
+    }
+
+    /* =========================================
+       5. 轮播列表模式 (大底片视觉)
+       ========================================= */
+    .carousel-shell {
+      position: absolute; inset: 0; display: grid; place-items: center; opacity: 0;
+      transform: translateY(22px) translateZ(140px); pointer-events: none;
+      transition: opacity 0.8s ease, transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); transform-style: preserve-3d;
+    }
+    .app.list-mode .carousel-shell { opacity: 1; transform: translateY(0) translateZ(170px); pointer-events: auto; }
+    .carousel { position: relative; width: 100vw; height: min(560px, 68vh); transform-style: preserve-3d; }
+
+    .carousel-card {
+      --dx: 0; --abs: 0; --tx: -50%; --tz: 0px; --scale: 1; --opacity: 1; --rot-y: 0deg; --rot-z: 0deg; --sat: 1; --h: 20;
+      position: absolute; left: 50%; top: 50%;
+      width: clamp(200px, 28vw, 420px);
+      aspect-ratio: 3 / 4;
+      padding: 44px 18px 52px 18px; 
+      background: #111; border: 1px solid #222; border-radius: 2px;
+      box-shadow: 0 35px 65px rgba(5, 5, 5, 0.9);
+      transform: translate3d(var(--tx), -50%, var(--tz)) rotateY(var(--rot-y)) rotateZ(var(--rot-z)) scale(var(--scale));
+      opacity: var(--opacity);
+      transition: transform .4s ease-out, opacity .4s ease-out, filter .4s ease-out;
+      filter: saturate(var(--sat)); transform-style: preserve-3d; pointer-events: none;
+    }
+    .carousel-card[data-hidden="true"] { opacity: 0; }
+    
+    .carousel-card::before, .carousel-card::after {
+      content: ""; position: absolute; left: 16px; right: 16px; height: 12px;
+      background: repeating-linear-gradient(to right, rgba(255, 255, 255, 0.18) 0px, rgba(255, 255, 255, 0.18) 8px, transparent 8px, transparent 18px);
+      z-index: 1; border-radius: 1px;
+    }
+    .carousel-card::before { top: 16px; }
+    .carousel-card::after { bottom: 16px; }
+
+    .carousel-card .photo-label { bottom: 32px; right: 20px; font-size: clamp(12px, 1.2vw, 15px); }
+    .carousel-card .film-brand { top: 32px; left: 20px; font-size: clamp(11px, 1vw, 14px); }
+
+    /* =========================================
+       6. 沉浸式 UI 
+       ========================================= */
+    .status {
+      position: fixed; right: clamp(14px, 3vw, 30px); bottom: clamp(14px, 3vw, 30px);
+      z-index: 14; display: grid; grid-template-columns: 120px minmax(160px, 230px); gap: 12px; align-items: end;
+    }
+    .readout {
+      min-height: 92px; padding: 14px 15px; border: 1px solid rgba(138, 115, 96, 0.3); border-radius: 2px;
+      background: rgba(20, 15, 10, 0.6); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), inset 0 1px rgba(255, 255, 255, 0.05); backdrop-filter: blur(18px);
+    }
+    .readout strong { display: block; margin-bottom: 7px; color: var(--gold); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; font-family: "Courier New", monospace; }
+    .readout span { display: block; color: var(--paper); opacity: 0.7; font-size: 12px; line-height: 1.5; }
+    
+    .meter { position: relative; width: 100%; height: 3px; margin-top: 12px; overflow: hidden; border-radius: 999px; background: rgba(138, 115, 96, 0.2); }
+    .meter i { position: absolute; inset: 0 auto 0 0; width: 50%; border-radius: inherit; background: linear-gradient(90deg, var(--cyan), var(--gold), var(--hot)); transform-origin: left; transform: scaleX(var(--confidence, .18)); transition: transform .2s ease; }
+
+    .camera-frame {
+      position: relative; width: 120px; aspect-ratio: 4 / 3; overflow: hidden; border: 2px solid rgba(138, 115, 96, 0.4);
+      border-radius: 2px; background: rgba(5, 5, 5, 0.9); box-shadow: 0 14px 34px rgba(5, 5, 5, 0.8); backdrop-filter: blur(16px);
+    }
+    .camera-frame::before, .camera-frame::after {
+      position: absolute; top: 0; bottom: 0; z-index: 2; width: 1px; content: ""; background: rgba(255, 255, 255, 0.1);
+    }
+    .camera-frame::before { left: 33.333%; }
+    .camera-frame::after { left: 66.666%; }
+    .camera-frame video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); opacity: 0; filter: sepia(0.6) grayscale(0.5) contrast(1.2); }
+
+    .palm-dot {
+      position: absolute; left: 50%; top: 50%; z-index: 4; width: 14px; height: 14px;
+      border: 2px solid var(--hot); border-radius: 50%; transform: translate(-50%, -50%); opacity: 0;
+      background: transparent; box-shadow: 0 0 8px rgba(217, 122, 108, 0.8); transition: opacity .18s ease;
+    }
+    .palm-dot.active { opacity: 1; }
+
+    .zone-label {
+      position: absolute; bottom: 7px; z-index: 3; width: 33.333%; color: rgba(255, 255, 255, 0.3); font-size: 8px; font-weight: bold;
+      letter-spacing: .08em; text-align: center; text-transform: uppercase; pointer-events: none; font-family: "Courier New", monospace;
+    }
+    .zone-label.left { left: 0; color: rgba(217, 122, 108, 0.5); }
+    .zone-label.center { left: 33.333%; }
+    .zone-label.right { left: 66.666%; color: rgba(138, 154, 134, 0.5); }
+
+    .folder-button {
+      width: 100%; min-height: 32px; margin-top: 12px; border: 1px solid rgba(138, 115, 96, 0.3); border-radius: 2px;
+      background: rgba(255, 255, 255, 0.1); color: var(--gold); cursor: pointer; font: inherit; font-size: 11px; font-weight: 800;
+      letter-spacing: .12em; text-transform: uppercase; font-family: "Courier New", monospace; transition: transform .18s ease, background .18s ease;
+    }
+    .folder-button:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-1px); }
+    .ambient-ring { display: none !important; }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translate3d(calc(-50% + var(--start-x)), calc(-50% + var(--start-y)), var(--start-z)) rotateX(var(--start-rx)) rotateY(var(--start-ry)) rotateZ(var(--rz)) scale(.74); }
+      to { opacity: 1; }
+    }
+
+    @media (max-width: 760px) {
+      .title-lockup { top: 16px; } .eyebrow { font-size: 10px; } h1 { max-width: 250px; } .wall { height: 78vh; }
+      .photo-card { width: clamp(80px, 20vw, 120px); padding: 32px 12px 36px 12px; }
+      .photo-card::before, .photo-card::after { height: 6px; left: 8px; right: 8px; }
+      .status { grid-template-columns: 86px minmax(0, 1fr); right: 12px; bottom: 12px; left: 12px; }
+      .camera-frame { width: 86px; } .readout { min-height: 70px; padding: 11px 12px; } .folder-button { min-height: 28px; margin-top: 8px; font-size: 10px; }
+      .projector-reel { width: 40vw; height: 40vw; bottom: -10vw; right: -10vw; }
     }
   </style>
 </head>
@@ -656,11 +307,17 @@
   <video class="background-video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
     <source src="assets/background.mp4" type="video/mp4">
   </video>
+  
   <div class="grain"></div>
+  
+  <div class="projector-reel" aria-hidden="true"></div>
+  <div class="projection-beam" aria-hidden="true"></div>
+  <div class="projection-screen" aria-hidden="true"></div>
+  
   <main class="app" id="app">
     <section class="title-lockup" aria-label="Gallery title">
-      <p class="eyebrow">Camera Gesture Gallery</p>
-      <h1>Immersive <span class="mode-word" id="modeWord">Wall</span></h1>
+      <p class="eyebrow">Projector Archive</p>
+      <h1>Film <span class="mode-word" id="modeWord">Session</span></h1>
     </section>
 
     <div class="ambient-ring" aria-hidden="true"></div>
@@ -675,16 +332,16 @@
     <aside class="status" aria-live="polite">
       <div class="camera-frame">
         <video id="camera" autoplay playsinline muted></video>
-        <span class="zone-label left">Left</span>
-        <span class="zone-label center">Center</span>
-        <span class="zone-label right">Right</span>
+        <span class="zone-label left">L</span>
+        <span class="zone-label center">C</span>
+        <span class="zone-label right">R</span>
         <span class="palm-dot" id="palmDot"></span>
       </div>
       <div class="readout">
-        <strong id="gestureLabel">Initializing</strong>
-        <span id="statusText">Loading hand tracking model...</span>
+        <strong id="gestureLabel">Warming Up Lamp</strong>
+        <span id="statusText">Calibrating optical tracker...</span>
         <div class="meter" aria-hidden="true"><i id="confidenceBar"></i></div>
-        <button class="folder-button" id="folderButton" type="button">选择照片</button>
+        <button class="folder-button" id="folderButton" type="button">Load Reel</button>
         <input id="folderInput" type="file" accept="image/*" webkitdirectory multiple hidden>
       </div>
     </aside>
@@ -714,12 +371,15 @@
     const folderButton = document.getElementById("folderButton");
     const folderInput = document.getElementById("folderInput");
 
+    const filmBrands = ["IMAX 70MM", "KODAK VISION3", "ILFORD ORTHO", "FUJIFILM ETERNA", "AGFA GEVAERT"];
+
     let photos = Array.from({ length: PHOTO_COUNT }, (_, index) => ({
       id: index + 1,
-      title: `placeholder ${index + 1}`,
+      title: `Frame - ${index + 1}`,
       src: PLACEHOLDER_IMAGE,
       isPlaceholder: true,
-      hue: (index * 31 + 16) % 360
+      hue: (index * 31 + 16) % 360,
+      brand: filmBrands[index % filmBrands.length]
     }));
 
     let handLandmarker;
@@ -733,23 +393,10 @@
     let activeObjectUrls = [];
     const layoutSeed = Math.random() * 100000;
 
-    function seededNoise(seed) {
-      const x = Math.sin(seed * 999.123) * 10000;
-      return x - Math.floor(x);
-    }
-
-    function clampValue(value, min, max) {
-      return Math.max(min, Math.min(max, value));
-    }
-
-    function centeredNoise(seed, scale) {
-      const average = (seededNoise(seed) + seededNoise(seed + 17) + seededNoise(seed + 37)) / 3;
-      return (average - .5) * 2 * scale;
-    }
-
-    function seededRange(seed, min, max) {
-      return min + seededNoise(seed) * (max - min);
-    }
+    function seededNoise(seed) { const x = Math.sin(seed * 999.123) * 10000; return x - Math.floor(x); }
+    function clampValue(value, min, max) { return Math.max(min, Math.min(max, value)); }
+    function centeredNoise(seed, scale) { const average = (seededNoise(seed) + seededNoise(seed + 17) + seededNoise(seed + 37)) / 3; return (average - .5) * 2 * scale; }
+    function seededRange(seed, min, max) { return min + seededNoise(seed) * (max - min); }
 
     function buildPhotoSurface(photo) {
       const surface = document.createElement("div");
@@ -761,15 +408,19 @@
         image.className = "photo-image";
         image.src = photo.src;
         image.alt = photo.isPlaceholder ? "Default placeholder" : photo.title;
-        image.loading = "eager";
-        image.decoding = "async";
+        image.loading = "eager"; image.decoding = "async";
         surface.append(image);
-      } else {
-        const label = document.createElement("span");
-        label.className = "photo-label";
-        label.textContent = String(photo.id);
-        surface.append(label);
       }
+      
+      const brandLabel = document.createElement("span");
+      brandLabel.className = "film-brand";
+      brandLabel.textContent = photo.brand;
+      surface.append(brandLabel);
+      
+      const label = document.createElement("span");
+      label.className = "photo-label";
+      label.textContent = `NO.${String(photo.id).padStart(2, '0')}`;
+      surface.append(label);
 
       return surface;
     }
@@ -780,10 +431,7 @@
       return IMAGE_EXTENSIONS.has(extension);
     }
 
-    function revokeObjectUrls() {
-      activeObjectUrls.forEach((url) => URL.revokeObjectURL(url));
-      activeObjectUrls = [];
-    }
+    function revokeObjectUrls() { activeObjectUrls.forEach((url) => URL.revokeObjectURL(url)); activeObjectUrls = []; }
 
     function setPhotosFromSources(sources) {
       photos = Array.from({ length: PHOTO_COUNT }, (_, index) => {
@@ -791,56 +439,39 @@
         const src = source ? source.src : PLACEHOLDER_IMAGE;
         return {
           id: index + 1,
-          title: source ? source.title : `placeholder ${index + 1}`,
+          title: source ? source.title : `Frame - ${index + 1}`,
           src,
           isPlaceholder: !source,
-          hue: (index * 31 + 16) % 360
+          hue: (index * 31 + 16) % 360,
+          brand: filmBrands[index % filmBrands.length]
         };
       });
     }
 
     function refreshGalleries() {
-      wall.replaceChildren();
-      carousel.replaceChildren();
-      centerIndex = Math.floor(PHOTO_COUNT / 2);
-      renderWall();
-      renderCarousel();
+      wall.replaceChildren(); carousel.replaceChildren(); centerIndex = Math.floor(PHOTO_COUNT / 2);
+      renderWall(); renderCarousel();
     }
 
-    function normalizeFolderUrl(href) {
-      const url = new URL(href, new URL(PHOTO_FOLDER, window.location.href));
-      return url.href;
-    }
+    function normalizeFolderUrl(href) { return new URL(href, new URL(PHOTO_FOLDER, window.location.href)).href; }
 
     async function loadFolderImages() {
       try {
         const response = await fetch(PHOTO_FOLDER, { cache: "no-store" });
         if (!response.ok) return [];
-
         const html = await response.text();
         const doc = new DOMParser().parseFromString(html, "text/html");
-        const links = Array.from(doc.querySelectorAll("a[href]"))
-          .map((link) => link.getAttribute("href"))
-          .filter((href) => href && !href.startsWith("?") && !href.startsWith("#"))
-          .filter((href) => !href.includes("/"))
-          .filter(isImagePath)
+        return Array.from(doc.querySelectorAll("a[href]"))
+          .map((link) => link.getAttribute("href")).filter((href) => href && !href.startsWith("?") && !href.startsWith("#"))
+          .filter((href) => !href.includes("/")).filter(isImagePath)
           .sort((a, b) => a.localeCompare(b, "zh-Hans-CN", { numeric: true, sensitivity: "base" }))
-          .slice(0, PHOTO_COUNT)
-          .map(normalizeFolderUrl);
-
-        return links;
-      } catch (error) {
-        console.warn("Could not read photo folder, using placeholders.", error);
-        return [];
-      }
+          .slice(0, PHOTO_COUNT).map(normalizeFolderUrl);
+      } catch (error) { return []; }
     }
 
     async function preparePhotos() {
       const folderImages = await loadFolderImages();
-      setPhotosFromSources(folderImages.map((src) => ({
-        src,
-        title: decodeURIComponent(src.split("/").pop() || "photo")
-      })));
+      setPhotosFromSources(folderImages.map((src) => ({ src, title: decodeURIComponent(src.split("/").pop() || "photo") })));
     }
 
     async function loadImagesFromDirectoryHandle(handle) {
@@ -852,429 +483,203 @@
       return files;
     }
 
-    function loadImagesFromFileList(fileList) {
-      return Array.from(fileList).filter((file) => isImagePath(file.name));
-    }
+    function loadImagesFromFileList(fileList) { return Array.from(fileList).filter((file) => isImagePath(file.name)); }
 
     function applySelectedFiles(files) {
       revokeObjectUrls();
-      const sources = files
-        .sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN", { numeric: true, sensitivity: "base" }))
-        .slice(0, PHOTO_COUNT)
-        .map((file) => {
-          const src = URL.createObjectURL(file);
-          activeObjectUrls.push(src);
-          return { src, title: file.name };
-        });
-
-      setPhotosFromSources(sources);
-      refreshGalleries();
-      setReadout("Photos Loaded", `${sources.length}/${PHOTO_COUNT} selected.`, .78);
+      const sources = files.sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN", { numeric: true, sensitivity: "base" })).slice(0, PHOTO_COUNT).map((file) => {
+        const src = URL.createObjectURL(file); activeObjectUrls.push(src); return { src, title: file.name };
+      });
+      setPhotosFromSources(sources); refreshGalleries();
+      setReadout("Reel Loaded", `${sources.length}/${PHOTO_COUNT} frames processed.`, .78);
     }
 
     async function pickPhotoFolder() {
       try {
         if ("showDirectoryPicker" in window) {
           const handle = await window.showDirectoryPicker({ mode: "read" });
-          applySelectedFiles(await loadImagesFromDirectoryHandle(handle));
-          return;
+          applySelectedFiles(await loadImagesFromDirectoryHandle(handle)); return;
         }
-
         folderInput.click();
-      } catch (error) {
-        if (error && error.name === "AbortError") return;
-        console.warn("Could not read selected folder.", error);
-        setReadout("Folder Error", "Could not read selected folder.", .14);
-      }
+      } catch (error) { if (error && error.name === "AbortError") return; setReadout("Archive Error", "Could not read records.", .14); }
     }
 
     function renderWall() {
-      const rect = wall.getBoundingClientRect();
-      const mobile = window.innerWidth <= 760;
-      const cardWidth = mobile
-        ? clampValue(window.innerWidth * .16, 62, 88)
-        : clampValue(window.innerWidth * .062, 76, 116);
-      const cardHeight = cardWidth * 1.25;
-      const maxX = Math.max(0, rect.width / 2 - cardWidth / 2 - 10);
-      const maxY = Math.max(0, rect.height / 2 - cardHeight / 2 - 10);
-      const spreadX = maxX * .98;
-      const spreadY = maxY * .9;
-      const safeWidth = cardWidth * 1.22;
-      const safeHeight = cardHeight * 1.08;
+      const rect = wall.getBoundingClientRect(); const mobile = window.innerWidth <= 760;
+      const cardWidth = mobile ? clampValue(window.innerWidth * .20, 80, 110) : clampValue(window.innerWidth * .085, 100, 160);
+      const cardHeight = cardWidth * 1.33;
+      const maxX = Math.max(0, rect.width / 2 - cardWidth / 2 - 10); const maxY = Math.max(0, rect.height / 2 - cardHeight / 2 - 10);
+      const spreadX = maxX * .98; const spreadY = maxY * .9;
+      const safeWidth = cardWidth * 1.25; const safeHeight = cardHeight * 1.15;
       const placed = [];
 
       photos.forEach((photo, index) => {
-        const card = document.createElement("article");
-        card.className = "photo-card";
-        card.style.setProperty("--h", photo.hue);
-        card.style.setProperty("--delay", `${index * 22}ms`);
+        const card = document.createElement("article"); card.className = "photo-card";
+        card.style.setProperty("--h", photo.hue); card.style.setProperty("--delay", `${index * 35}ms`);
 
-        let best = { x: 0, y: 0, score: -1 };
-        let chosen = null;
-
+        let best = { x: 0, y: 0, score: -1 }, chosen = null;
         for (let attempt = 0; attempt < 260; attempt += 1) {
           const seed = layoutSeed + index * 97 + attempt * 13;
           const angle = seededRange(seed + 1, 0, Math.PI * 2);
           const radius = Math.pow(seededNoise(seed + 2), .46) * (index < 18 ? .95 : 1);
-          const driftX = centeredNoise(seed + 3, .12) * maxX;
-          const driftY = centeredNoise(seed + 4, .11) * maxY;
+          const driftX = centeredNoise(seed + 3, .12) * maxX; const driftY = centeredNoise(seed + 4, .11) * maxY;
           const x = clampValue(Math.cos(angle) * radius * spreadX + driftX, -maxX, maxX);
           const y = clampValue(Math.sin(angle) * radius * spreadY + driftY, -maxY, maxY);
-          const collision = placed.some((point) =>
-            Math.abs(x - point.x) < safeWidth && Math.abs(y - point.y) < safeHeight
-          );
+          const collision = placed.some((point) => Math.abs(x - point.x) < safeWidth && Math.abs(y - point.y) < safeHeight);
           const minScore = placed.reduce((score, point) => {
-            const dx = Math.abs(x - point.x) / safeWidth;
-            const dy = Math.abs(y - point.y) / safeHeight;
+            const dx = Math.abs(x - point.x) / safeWidth; const dy = Math.abs(y - point.y) / safeHeight;
             return Math.min(score, Math.min(dx, dy) + Math.hypot(dx, dy) * .3);
           }, 99);
-
-          if (minScore > best.score) {
-            best = { x, y, score: minScore };
-          }
-
-          if (!collision) {
-            chosen = { x, y };
-            break;
-          }
+          if (minScore > best.score) { best = { x, y, score: minScore }; }
+          if (!collision) { chosen = { x, y }; break; }
         }
 
-        const x = chosen ? chosen.x : best.x;
-        const y = chosen ? chosen.y : best.y;
-        placed.push({ x, y });
-        const edgeX = maxX > 0 ? Math.abs(x) / maxX : 0;
-        const edgeY = maxY > 0 ? Math.abs(y) / maxY : 0;
+        const x = chosen ? chosen.x : best.x; const y = chosen ? chosen.y : best.y; placed.push({ x, y });
+        const edgeX = maxX > 0 ? Math.abs(x) / maxX : 0; const edgeY = maxY > 0 ? Math.abs(y) / maxY : 0;
         const centrality = 1 - Math.max(edgeX, edgeY);
         const z = 10 + centrality * 80 + seededNoise(layoutSeed + index + 19) * 70;
         const rx = -6 + seededNoise(layoutSeed + index + 29) * 12;
         const ry = -7 + seededNoise(layoutSeed + index + 41) * 14;
         const rz = -11 + seededNoise(layoutSeed + index + 53) * 22;
 
-        card.style.setProperty("--x", `${x.toFixed(2)}px`);
-        card.style.setProperty("--y", `${y.toFixed(2)}px`);
-        card.style.setProperty("--z", `${z.toFixed(2)}px`);
-        card.style.setProperty("--rx", `${rx.toFixed(2)}deg`);
-        card.style.setProperty("--ry", `${ry.toFixed(2)}deg`);
-        card.style.setProperty("--rz", `${rz.toFixed(2)}deg`);
-        card.style.setProperty("--start-x", `${(x * .62).toFixed(2)}px`);
-        card.style.setProperty("--start-y", `${(y * .62 + 28).toFixed(2)}px`);
-        card.style.setProperty("--start-z", `${(z - 180).toFixed(2)}px`);
-        card.style.setProperty("--start-rx", `${(rx * 1.8).toFixed(2)}deg`);
-        card.style.setProperty("--start-ry", `${(ry * 1.8).toFixed(2)}deg`);
-        card.style.setProperty("--hover-z", `${(z + 74).toFixed(2)}px`);
-        card.style.setProperty("--hover-rx", `${(rx * .45).toFixed(2)}deg`);
-        card.style.setProperty("--hover-ry", `${(ry * .45).toFixed(2)}deg`);
-        card.append(buildPhotoSurface(photo));
-        wall.append(card);
+        card.style.setProperty("--x", `${x.toFixed(2)}px`); card.style.setProperty("--y", `${y.toFixed(2)}px`);
+        card.style.setProperty("--z", `${z.toFixed(2)}px`); card.style.setProperty("--rx", `${rx.toFixed(2)}deg`);
+        card.style.setProperty("--ry", `${ry.toFixed(2)}deg`); card.style.setProperty("--rz", `${rz.toFixed(2)}deg`);
+        card.style.setProperty("--start-x", `${(x * .62).toFixed(2)}px`); card.style.setProperty("--start-y", `${(y * .62 + 28).toFixed(2)}px`);
+        card.style.setProperty("--start-z", `${(z - 180).toFixed(2)}px`); card.style.setProperty("--start-rx", `${(rx * 1.8).toFixed(2)}deg`);
+        card.style.setProperty("--start-ry", `${(ry * 1.8).toFixed(2)}deg`); card.style.setProperty("--hover-z", `${(z + 74).toFixed(2)}px`);
+        card.style.setProperty("--hover-rx", `${(rx * .45).toFixed(2)}deg`); card.style.setProperty("--hover-ry", `${(ry * .45).toFixed(2)}deg`);
+        card.append(buildPhotoSurface(photo)); wall.append(card);
       });
     }
 
-    function relayoutWall() {
-      wall.replaceChildren();
-      renderWall();
-    }
+    function relayoutWall() { wall.replaceChildren(); renderWall(); }
 
     function renderCarousel() {
-      photos.forEach((photo, index) => {
-        const card = document.createElement("article");
-        card.className = "carousel-card";
-        card.style.setProperty("--h", photo.hue);
-        card.append(buildPhotoSurface(photo));
-        carousel.append(card);
+      photos.forEach((photo) => {
+        const card = document.createElement("article"); card.className = "carousel-card";
+        card.style.setProperty("--h", photo.hue); card.append(buildPhotoSurface(photo)); carousel.append(card);
       });
       updateCarousel();
     }
 
     function updateCarousel() {
       const cards = carousel.querySelectorAll(".carousel-card");
-      const step = Math.max(86, Math.min(window.innerWidth * .18, 235));
+      const step = Math.max(120, Math.min(window.innerWidth * .24, 300));
       cards.forEach((card, index) => {
-        const dx = index - centerIndex;
-        const abs = Math.abs(dx);
-        const cappedAbs = Math.min(abs, 5);
-        const scale = 1.08 - Math.min(abs, 4) * .13;
-        const opacity = 1 - cappedAbs * .145;
-        const saturation = 1.12 - Math.min(abs, 4) * .1;
-        card.style.setProperty("--dx", dx.toFixed(3));
-        card.style.setProperty("--abs", abs.toFixed(3));
-        card.style.setProperty("--tx", `calc(-50% + ${(dx * step).toFixed(2)}px)`);
-        card.style.setProperty("--tz", `${(240 - abs * 76).toFixed(2)}px`);
-        card.style.setProperty("--scale", scale.toFixed(3));
-        card.style.setProperty("--opacity", Math.max(0, opacity).toFixed(3));
-        card.style.setProperty("--rot-y", `${(dx * -13).toFixed(2)}deg`);
-        card.style.setProperty("--rot-z", `${(dx * 1.8).toFixed(2)}deg`);
-        card.style.setProperty("--sat", Math.max(.45, saturation).toFixed(3));
-        card.dataset.hidden = abs > 5 ? "true" : "false";
+        const dx = index - centerIndex; const abs = Math.abs(dx); const cappedAbs = Math.min(abs, 5);
+        const scale = 1.08 - Math.min(abs, 4) * .13; const opacity = 1 - cappedAbs * .145; const saturation = 1.12 - Math.min(abs, 4) * .1;
+        card.style.setProperty("--dx", dx.toFixed(3)); card.style.setProperty("--abs", abs.toFixed(3));
+        card.style.setProperty("--tx", `calc(-50% + ${(dx * step).toFixed(2)}px)`); card.style.setProperty("--tz", `${(240 - abs * 76).toFixed(2)}px`);
+        card.style.setProperty("--scale", scale.toFixed(3)); card.style.setProperty("--opacity", Math.max(0, opacity).toFixed(3));
+        card.style.setProperty("--rot-y", `${(dx * -13).toFixed(2)}deg`); card.style.setProperty("--rot-z", `${(dx * 1.8).toFixed(2)}deg`);
+        card.style.setProperty("--sat", Math.max(.45, saturation).toFixed(3)); card.dataset.hidden = abs > 5 ? "true" : "false";
       });
     }
 
     function setMode(nextMode) {
-      if (mode === nextMode) return;
-      mode = nextMode;
-      app.classList.toggle("list-mode", mode === "list");
-      modeWord.textContent = mode === "list" ? "Preview" : "Wall";
-      resetZoneState();
+      if (mode === nextMode) return; mode = nextMode;
+      app.classList.toggle("list-mode", mode === "list"); modeWord.textContent = mode === "list" ? "Focus" : "Session"; resetZoneState();
     }
 
     function setReadout(label, text, confidence = .18) {
-      gestureLabel.textContent = label;
-      statusText.textContent = text;
-      confidenceBar.style.setProperty("--confidence", Math.max(.04, Math.min(1, confidence)).toFixed(3));
+      gestureLabel.textContent = label; statusText.textContent = text; confidenceBar.style.setProperty("--confidence", Math.max(.04, Math.min(1, confidence)).toFixed(3));
     }
 
-    function distance(a, b) {
-      return Math.hypot(a.x - b.x, a.y - b.y);
-    }
+    function distance(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 
     function jointAngle(a, b, c) {
-      const abx = a.x - b.x;
-      const aby = a.y - b.y;
-      const cbx = c.x - b.x;
-      const cby = c.y - b.y;
-      const dot = abx * cbx + aby * cby;
-      const mag = Math.hypot(abx, aby) * Math.hypot(cbx, cby);
-      if (mag < .000001) return 0;
-      const cosine = Math.max(-1, Math.min(1, dot / mag));
-      return Math.acos(cosine) * 180 / Math.PI;
+      const abx = a.x - b.x, aby = a.y - b.y; const cbx = c.x - b.x, cby = c.y - b.y;
+      const dot = abx * cbx + aby * cby; const mag = Math.hypot(abx, aby) * Math.hypot(cbx, cby);
+      if (mag < .000001) return 0; const cosine = Math.max(-1, Math.min(1, dot / mag)); return Math.acos(cosine) * 180 / Math.PI;
     }
 
     function recognizeGesture(landmarks) {
-      const wrist = landmarks[0];
-      const palm = landmarks[9];
-      const palmSize = Math.max(.001, distance(wrist, palm));
-      const fingers = [
-        { tip: 8, pip: 6, mcp: 5 },
-        { tip: 12, pip: 10, mcp: 9 },
-        { tip: 16, pip: 14, mcp: 13 },
-        { tip: 20, pip: 18, mcp: 17 }
-      ];
-
-      let extendedFingers = 0;
-      let curledFingers = 0;
-      let straightFingers = 0;
-      let fingerReach = 0;
+      const wrist = landmarks[0], palm = landmarks[9], palmSize = Math.max(.001, distance(wrist, palm));
+      const fingers = [{ tip: 8, pip: 6, mcp: 5 }, { tip: 12, pip: 10, mcp: 9 }, { tip: 16, pip: 14, mcp: 13 }, { tip: 20, pip: 18, mcp: 17 }];
+      let extendedFingers = 0, curledFingers = 0, straightFingers = 0, fingerReach = 0;
 
       fingers.forEach((finger) => {
-        const tipPalm = distance(landmarks[finger.tip], palm) / palmSize;
-        const pipPalm = distance(landmarks[finger.pip], palm) / palmSize;
-        const tipMcp = distance(landmarks[finger.tip], landmarks[finger.mcp]) / palmSize;
-        const pipMcp = distance(landmarks[finger.pip], landmarks[finger.mcp]) / palmSize;
+        const tipPalm = distance(landmarks[finger.tip], palm) / palmSize, pipPalm = distance(landmarks[finger.pip], palm) / palmSize;
+        const tipMcp = distance(landmarks[finger.tip], landmarks[finger.mcp]) / palmSize, pipMcp = distance(landmarks[finger.pip], landmarks[finger.mcp]) / palmSize;
         const pipAngle = jointAngle(landmarks[finger.tip], landmarks[finger.pip], landmarks[finger.mcp]);
         fingerReach += tipPalm;
-
-        if (pipAngle > 145) {
-          straightFingers += 1;
-        }
-
-        if (pipAngle > 136 || (tipPalm > 1.42 && tipPalm > pipPalm * 1.02 && tipMcp > pipMcp * 1.08)) {
-          extendedFingers += 1;
-        }
-
-        if (pipAngle < 118 && tipPalm < 1.58 && tipMcp < pipMcp * 1.18) {
-          curledFingers += 1;
-        }
+        if (pipAngle > 145) straightFingers += 1;
+        if (pipAngle > 136 || (tipPalm > 1.42 && tipPalm > pipPalm * 1.02 && tipMcp > pipMcp * 1.08)) extendedFingers += 1;
+        if (pipAngle < 118 && tipPalm < 1.58 && tipMcp < pipMcp * 1.18) curledFingers += 1;
       });
 
-      const averageReach = fingerReach / fingers.length;
-      const thumbAwayFromPalm = distance(landmarks[4], palm) / palmSize;
-      const thumbAwayFromIndex = distance(landmarks[4], landmarks[5]) / palmSize;
-      const thumbOpen = thumbAwayFromPalm > 1.28 && thumbAwayFromIndex > .9;
-      const openScore = Math.max(0, Math.min(1, (averageReach - 1.18) / .72));
-      const fistScore = Math.max(0, Math.min(1, (1.66 - averageReach) / .48));
-      const debug = `reach ${averageReach.toFixed(2)} ext ${extendedFingers} curl ${curledFingers} | open ${gestureVotes.open}/${VOTE_THRESHOLD} fist ${gestureVotes.fist}/${VOTE_THRESHOLD}`;
+      const averageReach = fingerReach / fingers.length; const thumbAwayFromPalm = distance(landmarks[4], palm) / palmSize;
+      const thumbAwayFromIndex = distance(landmarks[4], landmarks[5]) / palmSize; const thumbOpen = thumbAwayFromPalm > 1.28 && thumbAwayFromIndex > .9;
+      const openScore = Math.max(0, Math.min(1, (averageReach - 1.18) / .72)), fistScore = Math.max(0, Math.min(1, (1.66 - averageReach) / .48));
+      const debug = `[OPT:${averageReach.toFixed(2)}]`;
 
-      if (straightFingers >= 3 || (extendedFingers >= 3 && averageReach > 1.32) || (extendedFingers >= 2 && thumbOpen && averageReach > 1.42)) {
-        return { type: "open", confidence: Math.max(.45, openScore), palmX: palm.x, palmY: palm.y, debug };
-      }
-
-      if (curledFingers >= 3 && straightFingers <= 1 && averageReach < 1.62) {
-        return { type: "fist", confidence: Math.max(.45, fistScore), palmX: palm.x, palmY: palm.y, debug };
-      }
-
+      if (straightFingers >= 3 || (extendedFingers >= 3 && averageReach > 1.32) || (extendedFingers >= 2 && thumbOpen && averageReach > 1.42)) return { type: "open", confidence: Math.max(.45, openScore), palmX: palm.x, palmY: palm.y, debug };
+      if (curledFingers >= 3 && straightFingers <= 1 && averageReach < 1.62) return { type: "fist", confidence: Math.max(.45, fistScore), palmX: palm.x, palmY: palm.y, debug };
       return { type: "tracking", confidence: Math.max(.18, openScore * .58), palmX: palm.x, palmY: palm.y, debug };
     }
 
     function applyGestureVote(type) {
-      if (type === "open") {
-        gestureVotes.open += 1;
-        gestureVotes.fist = 0;
-      } else if (type === "fist") {
-        gestureVotes.fist += 1;
-        gestureVotes.open = 0;
-      } else {
-        gestureVotes.open = Math.max(0, gestureVotes.open - 1);
-        gestureVotes.fist = Math.max(0, gestureVotes.fist - 1);
-      }
-
-      if (gestureVotes.open >= VOTE_THRESHOLD) setMode("list");
-      if (gestureVotes.fist >= VOTE_THRESHOLD) setMode("wall");
+      if (type === "open") { gestureVotes.open += 1; gestureVotes.fist = 0; }
+      else if (type === "fist") { gestureVotes.fist += 1; gestureVotes.open = 0; }
+      else { gestureVotes.open = Math.max(0, gestureVotes.open - 1); gestureVotes.fist = Math.max(0, gestureVotes.fist - 1); }
+      if (gestureVotes.open >= VOTE_THRESHOLD) setMode("list"); if (gestureVotes.fist >= VOTE_THRESHOLD) setMode("wall");
     }
 
-    function updatePalmIndicator(palmX, palmY) {
-      palmDot.classList.add("active");
-      palmDot.style.left = `${(1 - palmX) * 100}%`;
-      palmDot.style.top = `${palmY * 100}%`;
-    }
-
-    function resetZoneState() {
-      zoneState = { current: "center", lastTriggerAt: performance.now(), label: "center" };
-    }
-
-    function stepCarousel(direction) {
-      centerIndex += direction;
-      centerIndex = Math.max(0, Math.min(PHOTO_COUNT - 1, centerIndex));
-      updateCarousel();
-    }
-
-    function zoneFromPalm(palmX) {
-      const visualX = 1 - palmX;
-      if (visualX < 1 / 3) return "left";
-      if (visualX > 2 / 3) return "right";
-      return "center";
-    }
+    function updatePalmIndicator(palmX, palmY) { palmDot.classList.add("active"); palmDot.style.left = `${(1 - palmX) * 100}%`; palmDot.style.top = `${palmY * 100}%`; }
+    function resetZoneState() { zoneState = { current: "center", lastTriggerAt: performance.now(), label: "center" }; }
+    function stepCarousel(direction) { centerIndex += direction; centerIndex = Math.max(0, Math.min(PHOTO_COUNT - 1, centerIndex)); updateCarousel(); }
+    function zoneFromPalm(palmX) { const visualX = 1 - palmX; if (visualX < 1 / 3) return "left"; if (visualX > 2 / 3) return "right"; return "center"; }
 
     function updateListFromPalm(palmX) {
-      const now = performance.now();
-      const nextZone = zoneFromPalm(palmX);
-
-      if (nextZone === zoneState.current) {
-        zoneState.label = nextZone;
-        return;
-      }
-
-      zoneState.current = nextZone;
-
-      if (nextZone === "center") {
-        zoneState.label = "center";
-        return;
-      }
-
-      if (now - zoneState.lastTriggerAt < ZONE_STEP_COOLDOWN) {
-        zoneState.label = `${nextZone} cooldown`;
-        return;
-      }
-
-      stepCarousel(nextZone === "left" ? -1 : 1);
-      zoneState.lastTriggerAt = now;
-      zoneState.label = `${nextZone} step`;
+      const now = performance.now(), nextZone = zoneFromPalm(palmX);
+      if (nextZone === zoneState.current) { zoneState.label = nextZone; return; }
+      zoneState.current = nextZone; if (nextZone === "center") { zoneState.label = "center"; return; }
+      if (now - zoneState.lastTriggerAt < ZONE_STEP_COOLDOWN) { zoneState.label = `${nextZone} lock`; return; }
+      stepCarousel(nextZone === "left" ? -1 : 1); zoneState.lastTriggerAt = now; zoneState.label = `${nextZone} shift`;
     }
 
     async function initHandTracking() {
       try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error("mediaDevices unavailable");
-        }
-
-        setReadout("Loading", "Preparing vision model...", .22);
-        const vision = await FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
-        );
-
-        const createLandmarker = (delegate) => HandLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-            delegate
-          },
-          runningMode: "VIDEO",
-          numHands: 1,
-          minHandDetectionConfidence: .35,
-          minHandPresenceConfidence: .35,
-          minTrackingConfidence: .35
-        });
-
-        try {
-          handLandmarker = await createLandmarker("GPU");
-        } catch (gpuError) {
-          console.warn("GPU delegate unavailable, retrying on CPU.", gpuError);
-          handLandmarker = await createLandmarker("CPU");
-        }
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-            width: { ideal: 960 },
-            height: { ideal: 720 },
-            frameRate: { ideal: 30 }
-          },
-          audio: false
-        });
-        video.srcObject = stream;
-        hasCamera = true;
-        await new Promise((resolve) => {
-          if (video.readyState >= 2) {
-            resolve();
-            return;
-          }
-          video.onloadedmetadata = resolve;
-        });
-        await video.play();
-        setReadout("Ready", "Camera connected.", .32);
-        requestAnimationFrame(detectFrame);
-      } catch (error) {
-        console.error(error);
-        const text = error && error.name === "NotAllowedError"
-          ? "Camera permission was not granted."
-          : "Hand tracking is unavailable.";
-        setReadout("Fallback", text, .12);
-        palmDot.classList.remove("active");
-      }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error("mediaDevices unavailable");
+        setReadout("Optics", "Aligning tracker...", .22);
+        const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+        const createLandmarker = (delegate) => HandLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task", delegate }, runningMode: "VIDEO", numHands: 1, minHandDetectionConfidence: .35, minHandPresenceConfidence: .35, minTrackingConfidence: .35 });
+        try { handLandmarker = await createLandmarker("GPU"); } catch (gpuError) { handLandmarker = await createLandmarker("CPU"); }
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 960 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }, audio: false });
+        video.srcObject = stream; hasCamera = true;
+        await new Promise((resolve) => { if (video.readyState >= 2) { resolve(); return; } video.onloadedmetadata = resolve; });
+        await video.play(); video.style.opacity = "1"; setReadout("Standby", "Awaiting gestures.", .32); requestAnimationFrame(detectFrame);
+      } catch (error) { setReadout("Offline", "Optical feed disabled.", .12); palmDot.classList.remove("active"); }
     }
 
     function detectFrame() {
-      if (!handLandmarker || !hasCamera || video.readyState < 2) {
-        requestAnimationFrame(detectFrame);
-        return;
-      }
-
+      if (!handLandmarker || !hasCamera || video.readyState < 2) { requestAnimationFrame(detectFrame); return; }
       const now = performance.now();
       if (video.currentTime !== lastVideoTime) {
-        lastVideoTime = video.currentTime;
-        const result = handLandmarker.detectForVideo(video, now);
-
+        lastVideoTime = video.currentTime; const result = handLandmarker.detectForVideo(video, now);
         if (result.landmarks && result.landmarks.length > 0) {
-          const gesture = recognizeGesture(result.landmarks[0]);
-          applyGestureVote(gesture.type);
-          updatePalmIndicator(gesture.palmX, gesture.palmY);
+          const gesture = recognizeGesture(result.landmarks[0]); applyGestureVote(gesture.type); updatePalmIndicator(gesture.palmX, gesture.palmY);
           if (mode === "list") updateListFromPalm(gesture.palmX);
-
-          const labels = {
-            open: "Open Palm",
-            fist: "Fist",
-            tracking: "Tracking"
-          };
-          const navText = mode === "list"
-            ? ` | zone ${zoneState.label} | card ${centerIndex + 1}/${PHOTO_COUNT}`
-            : "";
-          const modeText = `${mode === "list" ? "Preview list active." : "Photo wall active."} ${gesture.debug}${navText}`;
+          const labels = { open: "Palm Active", fist: "Fist Active", tracking: "Tracking" };
+          const navText = mode === "list" ? ` | Frame ${centerIndex + 1}/${PHOTO_COUNT}` : "";
+          const modeText = `${mode === "list" ? "Focus plane." : "Memory wall."} ${gesture.debug}${navText}`;
           setReadout(labels[gesture.type], modeText, gesture.confidence);
         } else {
-          palmDot.classList.remove("active");
-          applyGestureVote("none");
-          if (mode === "list") resetZoneState();
-          setReadout("Searching", mode === "list" ? "Preview list active." : "Photo wall active.", .16);
+          palmDot.classList.remove("active"); applyGestureVote("none"); if (mode === "list") resetZoneState();
+          setReadout("Scanning", mode === "list" ? "Focus plane active." : "Memory wall active.", .16);
         }
       }
-
       requestAnimationFrame(detectFrame);
     }
 
     async function bootstrap() {
-      await preparePhotos();
-      renderWall();
-      renderCarousel();
+      await preparePhotos(); renderWall(); renderCarousel();
       folderButton.addEventListener("click", pickPhotoFolder);
-      folderInput.addEventListener("change", () => {
-        applySelectedFiles(loadImagesFromFileList(folderInput.files || []));
-        folderInput.value = "";
-      });
-      window.addEventListener("resize", () => {
-        updateCarousel();
-        window.clearTimeout(wallResizeTimer);
-        wallResizeTimer = window.setTimeout(relayoutWall, 160);
-      }, { passive: true });
+      folderInput.addEventListener("change", () => { applySelectedFiles(loadImagesFromFileList(folderInput.files || [])); folderInput.value = ""; });
+      window.addEventListener("resize", () => { updateCarousel(); window.clearTimeout(wallResizeTimer); wallResizeTimer = window.setTimeout(relayoutWall, 160); }, { passive: true });
       initHandTracking();
     }
-
     bootstrap();
   </script>
 </body>
