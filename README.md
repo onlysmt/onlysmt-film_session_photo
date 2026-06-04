@@ -3,9 +3,11 @@
 手势说明：
 1.单手交互，张开时，打开浏览列表；
 2.握拳时，推出浏览列表；
-3.打开浏览列表状态下，可通过右下角手势追踪窗口确认。
-4.手势移入手势追踪窗口中的左、右区域，同步翻页。
+3.打开浏览列表状态下，可通过右下角手势追踪窗口确认；
+4.手势移入手势追踪窗口中的左、右区域，同步翻页；
+5.握拳仅伸出一根手指时打开预览大图。
 
 注意：
 手势交互需要允许打开摄像头。
-<img width="1920" height="911" alt="image" src="https://github.com/user-attachments/assets/f6aec193-e1db-4b28-b372-9220c1b86162" />
+<img width="1808" height="869" alt="image" src="https://github.com/user-attachments/assets/970c2e69-71da-451e-8a7f-2b4d6d0b573e" />
+
